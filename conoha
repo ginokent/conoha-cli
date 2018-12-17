@@ -81,7 +81,7 @@ conoHaListFlavors() {
     -H 'Accept: application/json' \
     -H "X-Auth-Token: ${ConoHaToken}" \
     | jq '.flavors[] | { id, name }' \
-    | jq -s '{ flavors: [.] }'
+    | jq -s '{ flavors: . }'
 }
 
 conoHaListFlavorsDetail() {
@@ -98,7 +98,7 @@ conoHaListImages() {
     -H "Accept: application/json" \
     -H "X-Auth-Token: ${ConoHaToken}" \
     | jq '.images[] | { id, name }' \
-    | jq -s '{ images: [.] }'
+    | jq -s '{ images: . }'
 }
 
 conoHaListImagesDetail() {
@@ -204,7 +204,7 @@ conoHaCreatePort() {
   curl -sS -X POST "https://networking.tyo1.conoha.io/v2.0/ports" \
     -H 'Accept: application/json' \
     -H "X-Auth-Token: ${ConoHaToken}" \
-    -d'{"port":{"network_id":"'"${conoHaNetworkId}"'","fixed_ips":[{"ip_address":"'"${conoHaIPAddress}"'","subnet_id":"'"${conoHaSubnetId}"'"}],"security_groups":'"$(conoHaListSecurityGroups | jq '.security_groups[] | select( (.name == "gncs-ipv4-all") or (.name == "default") ) | .id' | jq -cs .)"'}}' \
+    -d'{"port":{"network_id":"'"${conoHaNetworkId}"'","fixed_ips":[{"ip_address":"'"${conoHaIPAddress}"'","subnet_id":"'"${conoHaSubnetId}"'"}],"security_groups":'"$(conoHaListSecurityGroupsDetail | jq '.security_groups[] | select( (.name == "gncs-ipv4-all") or (.name == "default") ) | .id' | jq -cs .)"'}}' \
     | jq .
 }
 
@@ -231,7 +231,7 @@ conoHaListSecurityGroups() {
     -H 'Accept: application/json' \
     -H "X-Auth-Token: ${ConoHaToken}" \
     | jq '.security_groups[] | { tenant_id, description, id, name }' \
-    | jq -s '{ security_groups: [.] }'
+    | jq -s '{ security_groups: . }'
 }
 
 conoHaListSecurityGroupsDetail() {
@@ -252,7 +252,7 @@ conoHaListSubnets() {
 
 conoHaListAdditionalIPAddresses() {
   conoHaListSubnets | jq '.subnets[] | select(.cidr | match("/32"))' \
-  | jq -s '{ subnets: [.] }'
+  | jq -s '{ subnets: . }'
 }
 
 conoHaGetUbuntu1804Image() {
