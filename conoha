@@ -15,7 +15,6 @@ checkDependency() { (
   for cmd in "$@"; do
     if ! { command -v -- "${cmd}" >/dev/null; }; then
       echo "\"${cmd}\" not found in \$PATH" > /dev/stderr
-      # If command not found in PATH, it terminates abnormally immediately.
       exit 1
     fi
   done
@@ -25,7 +24,7 @@ checkDependency curl jq
 ConoHaCredentialsFile="$HOME/.conoha/credentials"
 
 conoHaConfigure() {
-  if test -e "${ConoHaCredentialsFile}"; then
+  if [ -e "${ConoHaCredentialsFile}" ]; then
     echo "already exist: ${ConoHaCredentialsFile}"
     exit 1
   fi
@@ -41,7 +40,7 @@ conoHaConfigure() {
   stty echo
   echo
   if [ -z "${ConoHaTenantId}" ] || [ -z "${ConoHaAPIAccountUsername}" ] || [ -z "${ConoHaAPIAccountPassword}" ]; then
-    echo "parameter not set"
+    echo "Credentials parameters are not set"
     exit 1
   fi
   {
@@ -57,7 +56,7 @@ conoHaSetCredentials() {
   if [ -r "${ConoHaCredentialsFile}" ] && [ -f "${ConoHaCredentialsFile}" ]; then
     . "${ConoHaCredentialsFile}"
   else
-    echo "credentials file not found: ${ConoHaCredentialsFile}"
+    echo "Credentials file does not found: ${ConoHaCredentialsFile}"
     echo "For set credentials, run:"
     echo "  $ conoha configure"
     exit 1
