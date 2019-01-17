@@ -53,7 +53,7 @@ conoHaConfigure() {
 }
 
 conoHaSetCredentials() {
-  if [ -r "${ConoHaCredentialsFile}" ] && [ -f "${ConoHaCredentialsFile}" ]; then
+  if [ -f "${ConoHaCredentialsFile}" ] && [ -r "${ConoHaCredentialsFile}" ]; then
     . "${ConoHaCredentialsFile}"
   else
     echo "Credentials file does not found: ${ConoHaCredentialsFile}"
