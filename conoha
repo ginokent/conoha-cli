@@ -140,7 +140,7 @@ ConoHaFlavorsList() {
     conoha_api_endpoint="https://compute.tyo1.conoha.io/v2/${CONOHA_TENANT_ID}/flavors"
     curl -sS -X GET "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
-      -H "X-Auth-Token: ${CONOHA_TOKEN}"
+      -H "X-Auth-Token: ${CONOHA_TOKEN}" \
   )
   echo "${conoha_api_response}" | jq .
 }
@@ -163,7 +163,7 @@ ConoHaImagesList() {
     conoha_api_endpoint="https://compute.tyo1.conoha.io/v2/${CONOHA_TENANT_ID}/images"
     curl -sS -X GET "${conoha_api_endpoint}" \
       -H "Accept: application/json" \
-      -H "X-Auth-Token: ${CONOHA_TOKEN}"
+      -H "X-Auth-Token: ${CONOHA_TOKEN}" \
   )
   echo "${conoha_api_response}" | jq .
 }
@@ -191,6 +191,21 @@ ConoHaKeypairsList() {
   echo "${conoha_api_response}" | jq .
 }
 
+ConoHaKeypairsUpload() {
+  # ref. https://www.conoha.jp/docs/compute-get_keypairs.html
+  conoha_key_name="${1:?"$(printf '\n%s' "Set \$1 as Keypair Name")"}"
+  conoha_public_key="${2:?"$(printf '\n%s\n%s\n%s' "Set \$2 as Public Key (e.g. \"ssh-rsa AAAAB3NzaC1yc2EAAAA... foobar@localhost\" or \"\$(cat ~/.ssh/id_rsa.pub)\")" "See:" "  $ conoha subnets list")"}"
+  ConoHaSetCredentials
+  conoha_api_response=$(
+    conoha_api_endpoint="https://compute.tyo1.conoha.io/v2/${CONOHA_TENANT_ID}/os-keypairs"
+    curl -sS -X POST "${conoha_api_endpoint}" \
+      -H 'Accept: application/json' \
+      -H "X-Auth-Token: ${CONOHA_TOKEN}" \
+      -d '{"keypair": {"name": "'"${conoha_key_name}"'","public_key": "'"${conoha_public_key}"'"}}' \
+  )
+  echo "${conoha_api_response}" | jq .
+}
+
 
 
 ##
@@ -203,7 +218,7 @@ ConoHaPortsList() {
     conoha_api_endpoint="https://networking.tyo1.conoha.io/v2.0/ports"
     curl -sS -X GET "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
-      -H "X-Auth-Token: ${CONOHA_TOKEN}"
+      -H "X-Auth-Token: ${CONOHA_TOKEN}" \
   )
   echo "${conoha_api_response}" | jq .
 }
@@ -214,9 +229,9 @@ ConoHaPortsListSumally() {
 }
 
 ConoHaPortsCreate() {
-  conoha_network_id="${1:?"$(printf '\n%s\n%s\n%s' "Set \$1 as Network ID (e.g. ffffffff-ffff-ffff-ffff-ffffffffffff)" "See:" "  $ conoha subnets list")"}"
-  conoha_subnet_id="${2:?"$(printf '\n%s\n%s\n%s' "Set \$2 as Subnet ID (e.g. ffffffff-ffff-ffff-ffff-ffffffffffff)" "See:" "  $ conoha subnets list")"}"
-  conoha_ipaddress="${3:?"$(printf '\n%s\n%s\n%s' "Set \$3 as IPAddress (e.g. 8.8.8.8)" "See:" "  $ conoha subnets list")"}"
+  conoha_network_id="${1:?"$(printf '\n%s\n%s\n%s' "Set \$1 as Network ID (e.g. \"ffffffff-ffff-ffff-ffff-ffffffffffff\")" "See:" "  $ conoha subnets list")"}"
+  conoha_subnet_id="${2:?"$(printf '\n%s\n%s\n%s' "Set \$2 as Subnet ID (e.g. \"ffffffff-ffff-ffff-ffff-ffffffffffff\")" "See:" "  $ conoha subnets list")"}"
+  conoha_ipaddress="${3:?"$(printf '\n%s\n%s\n%s' "Set \$3 as IPAddress (e.g. \"8.8.8.8\")" "See:" "  $ conoha subnets list")"}"
   ConoHaSetCredentials
   conoha_api_response=$(
     conoha_default_security_groups="$(ConoHaSecurityGroupsList | jq '.security_groups[] | select( (.name == "gncs-ipv4-all") or (.name == "default") ) | .id' | jq -cs .)"
@@ -224,19 +239,19 @@ ConoHaPortsCreate() {
     curl -sS -X POST "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
-      -d'{"port":{"network_id":"'"${conoha_network_id}"'","fixed_ips":[{"ip_address":"'"${conoha_ipaddress}"'","subnet_id":"'"${conoha_subnet_id}"'"}],"security_groups":'"${conoha_default_security_groups}"'}}'
+      -d'{"port":{"network_id":"'"${conoha_network_id}"'","fixed_ips":[{"ip_address":"'"${conoha_ipaddress}"'","subnet_id":"'"${conoha_subnet_id}"'"}],"security_groups":'"${conoha_default_security_groups}"'}}' \
   )
   echo "${conoha_api_response}" | jq .
 }
 
 ConoHaPortsDelete() {
-  conoha_port_id="${1:?"$(printf '\n%s\n%s\n%s' "Set \$1 as Port ID (e.g. ffffffff-ffff-ffff-ffff-ffffffffffff)" "See:" "  $ conoha ports list")"}"
+  conoha_port_id="${1:?"$(printf '\n%s\n%s\n%s' "Set \$1 as Port ID (e.g. \"ffffffff-ffff-ffff-ffff-ffffffffffff\")" "See:" "  $ conoha ports list")"}"
   ConoHaSetCredentials
   conoha_api_response=$(
     conoha_api_endpoint="https://networking.tyo1.conoha.io/v2.0/${conoha_port_id}"
     curl -sS -X DELETE "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
-      -H "X-Auth-Token: ${CONOHA_TOKEN}"
+      -H "X-Auth-Token: ${CONOHA_TOKEN}" \
   )
   echo "${conoha_api_response}" | jq .
 }
@@ -253,7 +268,7 @@ ConoHaSecurityGroupsList() {
     conoha_api_endpoint="https://networking.tyo1.conoha.io/v2.0/security-groups"
     curl -sS -X GET "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
-      -H "X-Auth-Token: ${CONOHA_TOKEN}"
+      -H "X-Auth-Token: ${CONOHA_TOKEN}" \
   )
   echo "${conoha_api_response}" | jq .
 }
@@ -269,47 +284,47 @@ ConoHaSecurityGroupsListSumally() {
 # servers
 ##
 ConoHaServersAttachPort() {
-  conoha_server_id="${1:?"$(printf '\n%s\n%s\n%s' "Set \$1 as Server ID (e.g. ffffffff-ffff-ffff-ffff-ffffffffffff)" "See:" "  $ conoha servers list")"}"
-  conoha_port_id="${2:?"$(printf '\n%s\n%s\n%s' "Set \$2 as Port ID (e.g. ffffffff-ffff-ffff-ffff-ffffffffffff)" "See:" "  $ conoha ports list")"}"
+  conoha_server_id="${1:?"$(printf '\n%s\n%s\n%s' "Set \$1 as Server ID (e.g. \"ffffffff-ffff-ffff-ffff-ffffffffffff\")" "See:" "  $ conoha servers list")"}"
+  conoha_port_id="${2:?"$(printf '\n%s\n%s\n%s' "Set \$2 as Port ID (e.g. \"ffffffff-ffff-ffff-ffff-ffffffffffff\")" "See:" "  $ conoha ports list")"}"
   ConoHaSetCredentials
   conoha_api_endpoint="https://compute.tyo1.conoha.io/v2/${CONOHA_TENANT_ID}/servers/${conoha_server_id}/os-interface"
   conoha_api_response=$(
     curl -sS -X POST "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
-      -d '{"interfaceAttachment":{"port_id":"'"${conoha_port_id}"'"}}'
+      -d '{"interfaceAttachment":{"port_id":"'"${conoha_port_id}"'"}}' \
   )
   echo "${conoha_api_response}" | jq .
 }
 
 ConoHaServersCreate() {
   # ref. https://www.conoha.jp/docs/compute-create_vm.html
-  conoha_flavor_id="${1:?"$(printf '\n%s\n%s\n%s' "Set \$1 as VM Flavor ID (e.g. d92b02ce-9a4f-4544-8d7f-ae8380bc08e7)" "See:" "  $ conoha flavors list")"}"
-  conoha_image_id="${2:?"$(printf '\n%s\n%s\n%s' "Set \$2 as VM Image ID (e.g. 2322444e-9000-47a8-a425-45fdef52d031)" "See:" "  $ conoha images list")"}"
-  conoha_root_password="${3:?"$(printf '\n%s' "Set \$3 as VM OS Password (e.g. P@ssw0rd)")"}"
-  conoha_key_name="${4:?"$(printf '\n%s' "Set \$4 as VM OS Password (e.g. P@ssw0rd)")"}"
-  conoha_userdata_base64_encoded="${5:?"$(printf '\n%s\n%s\n%s' "Set \$5 as base64-encoded userdata (e.g. IyEvYmluL2Jhc2gK...)" "If you want to encode base64, run:" "  $ cat \"\${YOUR_USER_DATA_FILE:?}\" | openssl base64")"}"
-  conoha_name_tag="${6:?"$(printf '\n%s' "Set \$6 as VM Name Tag (e.g. bastion)")"}"
+  conoha_flavor_id="${1:?"$(printf '\n%s\n%s\n%s' "Set \$1 as VM Flavor ID (e.g. \"d92b02ce-9a4f-4544-8d7f-ae8380bc08e7\")" "See:" "  $ conoha flavors list")"}"
+  conoha_image_id="${2:?"$(printf '\n%s\n%s\n%s' "Set \$2 as VM Image ID (e.g. \"2322444e-9000-47a8-a425-45fdef52d031\")" "See:" "  $ conoha images list")"}"
+  conoha_root_password="${3:?"$(printf '\n%s' "Set \$3 as VM OS Password (e.g. \"P@ssw0rd\")")"}"
+  conoha_key_name="${4:?"$(printf '\n%s' "Set \$4 as VM OS Password (e.g. \"P@ssw0rd\")")"}"
+  conoha_userdata_base64_encoded="${5:?"$(printf '\n%s\n%s\n%s' "Set \$5 as base64-encoded userdata (e.g. \"IyEvYmluL2Jhc2gK...\")" "If you want to encode base64, run:" "  $ cat \"\${YOUR_USER_DATA_FILE:?}\" | openssl base64")"}"
+  conoha_name_tag="${6:?"$(printf '\n%s' "Set \$6 as VM Name Tag (e.g. \"bastion\")")"}"
   ConoHaSetCredentials
   conoha_api_response=$(
     conoha_api_endpoint="https://compute.tyo1.conoha.io/v2/${CONOHA_TENANT_ID}/servers"
     curl -sS -X POST "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
-      -d '{"server":{"flavorRef":"'"${conoha_flavor_id}"'","imageRef":"'"${conoha_image_id}"'","adminPass":"'"${conoha_root_password}"'","key_name":"'"${conoha_key_name}"'","security_groups":[{"name":"default"},{"name":"gncs-ipv4-all"}],"user_data":"'"${conoha_userdata_base64_encoded}"'","metadata":{"instance_name_tag":"'"${conoha_name_tag}"'"}}}'
+      -d '{"server":{"flavorRef":"'"${conoha_flavor_id}"'","imageRef":"'"${conoha_image_id}"'","adminPass":"'"${conoha_root_password}"'","key_name":"'"${conoha_key_name}"'","security_groups":[{"name":"default"},{"name":"gncs-ipv4-all"}],"user_data":"'"${conoha_userdata_base64_encoded}"'","metadata":{"instance_name_tag":"'"${conoha_name_tag}"'"}}}' \
   )
   echo "${conoha_api_response}" | jq .
 }
 
 ConoHaServersDelete() {
   # ref. https://www.conoha.jp/docs/compute-delete_vm.html
-  conoha_server_id="${1:?"$(printf '\n%s\n%s\n%s' "Set \$1 as Server ID (e.g. ffffffff-ffff-ffff-ffff-ffffffffffff)" "See:" "  $ conoha servers list")"}"
+  conoha_server_id="${1:?"$(printf '\n%s\n%s\n%s' "Set \$1 as Server ID (e.g. \"ffffffff-ffff-ffff-ffff-ffffffffffff\")" "See:" "  $ conoha servers list")"}"
   ConoHaSetCredentials
   conoha_api_response=$(
     conoha_api_endpoint="https://compute.tyo1.conoha.io/v2/${CONOHA_TENANT_ID}/servers/${conoha_server_id}"
     curl -sS -X DELETE "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
-      -H "X-Auth-Token: ${CONOHA_TOKEN}"
+      -H "X-Auth-Token: ${CONOHA_TOKEN}" \
   )
   echo "${conoha_api_response}" | jq .
 }
@@ -321,7 +336,7 @@ ConoHaServersListDetail() {
     conoha_api_endpoint="https://compute.tyo1.conoha.io/v2/${CONOHA_TENANT_ID}/servers/detail"
     curl -sS -X GET "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
-      -H "X-Auth-Token: ${CONOHA_TOKEN}"
+      -H "X-Auth-Token: ${CONOHA_TOKEN}" \
   )
   echo "${conoha_api_response}" | jq .
 }
@@ -333,39 +348,39 @@ ConoHaServersListDetailSumally() {
 
 ConoHaServersListAttachedPorts() {
   # ref. https://www.conoha.jp/docs/compute-get_attached_ports_list.html
-  conoha_server_id="${1:?"$(printf '\n%s\n%s\n%s' "Set \$1 as Server ID (e.g. ffffffff-ffff-ffff-ffff-ffffffffffff)" "See:" "  $ conoha servers list")"}"
+  conoha_server_id="${1:?"$(printf '\n%s\n%s\n%s' "Set \$1 as Server ID (e.g. \"ffffffff-ffff-ffff-ffff-ffffffffffff\")" "See:" "  $ conoha servers list")"}"
   ConoHaSetCredentials
   conoha_api_response=$(
     conoha_api_endpoint="https://compute.tyo1.conoha.io/v2/${CONOHA_TENANT_ID}/servers/${conoha_server_id}/os-interface"
     curl -sS -X GET "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
-      -H "X-Auth-Token: ${CONOHA_TOKEN}"
+      -H "X-Auth-Token: ${CONOHA_TOKEN}" \
   )
   echo "${conoha_api_response}" | jq .
 }
 
 ConoHaServersStart() {
-  conoha_server_id="${1:?"$(printf '\n%s\n%s\n%s' "Set \$1 as Server ID (e.g. ffffffff-ffff-ffff-ffff-ffffffffffff)" "See:" "  $ conoha servers list")"}"
+  conoha_server_id="${1:?"$(printf '\n%s\n%s\n%s' "Set \$1 as Server ID (e.g. \"ffffffff-ffff-ffff-ffff-ffffffffffff\")" "See:" "  $ conoha servers list")"}"
   ConoHaSetCredentials
   conoha_api_response=$(
     conoha_api_endpoint="https://compute.tyo1.conoha.io/v2/${CONOHA_TENANT_ID}/servers/${conoha_server_id}/action"
     curl -sS -X POST "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
-      -d '{"os-start":null}'
+      -d '{"os-start":null}' \
   )
   echo "${conoha_api_response}" | jq .
 }
 
 ConoHaServersStop() {
-  conoha_server_id="${1:?"$(printf '\n%s\n%s\n%s' "Set \$1 as Server ID (e.g. ffffffff-ffff-ffff-ffff-ffffffffffff)" "See:" "  $ conoha servers list")"}"
+  conoha_server_id="${1:?"$(printf '\n%s\n%s\n%s' "Set \$1 as Server ID (e.g. \"ffffffff-ffff-ffff-ffff-ffffffffffff\")" "See:" "  $ conoha servers list")"}"
   ConoHaSetCredentials
   conoha_api_response=$(
     conoha_api_endpoint="https://compute.tyo1.conoha.io/v2/${CONOHA_TENANT_ID}/servers/${conoha_server_id}/action"
     curl -sS -X POST "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
-      -d '{"os-stop":null}'
+      -d '{"os-stop":null}' \
   )
   echo "${conoha_api_response}" | jq .
 }
@@ -494,6 +509,7 @@ ConohaMain() {  ## main start DO NOT REMOVE ##
       case "${sub2_command}" in
         subcmds) eval "${get_sub2_cmds}" ;;
         list   ) ConoHaKeypairsList "$@" ;;
+        upload ) ConoHaKeypairsUpload "$@" ;;
         *      ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
       esac ;;
     ports)
