@@ -1,0 +1,23 @@
+# vim
+*.swp
+.*.swp
+:*
+
+# emacs
+*~
+.*~
+
+# Darwin
+.DS_Store
+
+# Ansible
+*.retry
+tmp-ansible
+
+# other
+*exe
+vendor/
+node_modules/
+/Dockerfile
+test.json
+tmp.sh
