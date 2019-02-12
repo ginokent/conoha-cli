@@ -437,7 +437,7 @@ ConohaMain() {  ## main start DO NOT REMOVE ##
         stop-server        ) ConoHaServersStop "$@" ;;
         *                  ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
       esac ;;
-    sg|securitygroup)
+    sg|securitygroups)
       case "${sub2_command}" in
         subcmds    ) eval "${get_sub2_cmds}" ;;
         list       ) ConoHaSecurityGroupsList "$@" ;;

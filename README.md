@@ -1,6 +1,6 @@
 # conoha-cli
 
-[ConoHa](https://www.conoha.jp/) CLI written in shell script.
+[ConoHa](https://www.conoha.jp/) Command Line Interface written in shell script.
 
 ### Dependencies
 
@@ -10,25 +10,25 @@
 ### Install
 
 ```console
-$ curl -sS https://raw.githubusercontent.com/djeeno/conoha-cli/master/conoha -o /tmp/conoha
+$ curl -LRsS https://raw.githubusercontent.com/djeeno/conoha-cli/0.0.1/conoha -o /tmp/conoha
+$ chmod +x /tmp/conoha
 $ sudo mv /tmp/conoha /usr/local/bin/conoha
-$ sudo chmod +x /usr/local/bin/conoha
 ```
 
 ### Tab completion
 
 ```console
-$ . "$(command -v conoha)"
+$ . "$(conoha complete)"
 
 $ conoha  # <tab>
-configure      flavor         image          port           securitygroup  server         sg             subnet         tools
+configure       flavors         images          ports           securitygroups  servers         sg              subnets         tools           version
 ```
 
 ### Set Credentials
 
 ```console
 $ conoha configure
-ref: https://manage.conoha.jp/API/
+ref. https://manage.conoha.jp/API/
 ConoHa Tenant ID: foobar
 ConoHa API Account Username: foobar
 ConoHa API Account Password:
@@ -37,7 +37,7 @@ ConoHa API Account Password:
 ### Run
 
 ```console
-$ conoha image list-images
+$ conoha images list
 {
   "images": [
     [
