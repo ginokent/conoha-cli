@@ -14,7 +14,7 @@ set -e -o pipefail
 ##
 # constants
 ##
-CONOHA_VERSION='0.0.1'
+CONOHA_VERSION='0.0.2'
 CONOHA_PROGRAM_NAME="$(basename -- "$0")"
 
 
@@ -103,9 +103,9 @@ ConoHaSetCredentials() {
 ConoHaBase64Encode() {
 CheckDependency base64 openssl
 if command -v base64 1>/dev/null; then
-  base64 < /dev/stdin
+  base64 </dev/stdin
 elif command -v openssl 1>/dev/null; then
-  openssl base64 < /dev/stdin
+  openssl base64 </dev/stdin
 else
   echo "You need \"base64\" or \"openssl\""
   exit 1
@@ -114,11 +114,11 @@ fi
 
 ConoHaJSON() {
   if command -v jq 1>/dev/null; then
-    "$(command -v jq)" . < /dev/stdin
+    "$(command -v jq)" . </dev/stdin
   elif command -v python 1>/dev/null; then
-    "$(command -v python)" -m json.tool < /dev/stdin
+    "$(command -v python)" -m json.tool </dev/stdin
   elif command -v ruby 1>/dev/null; then
-    "$(command -v ruby)" -r json -e 'puts JSON.pretty_generate(JSON.parse(STDIN.read))' < /dev/stdin
+    "$(command -v ruby)" -r json -e 'puts JSON.pretty_generate(JSON.parse(STDIN.read))' </dev/stdin
   elif command -v perl 1>/dev/null; then
     # shellcheck disable=SC2016
     "$(command -v perl)" -MEncode -MJSON::PP -e '$json=JSON::PP->new->pretty; $obj=$json->decode(decode_utf8(join("",(<STDIN>)))); print encode_utf8($json->encode($obj))'
