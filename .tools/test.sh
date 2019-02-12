@@ -27,11 +27,11 @@ CODE=0
 echo $ ${BIN_NAME} version \
   ; "${DIRECTORY}/${BIN_NAME}" version \
   ; CODE=$((CODE+$?))
-echo $ ${BIN_NAME} images list-short \
-  ; "${DIRECTORY}/${BIN_NAME}" images list-short \
+echo $ ${BIN_NAME} images list-sumally \
+  ; "${DIRECTORY}/${BIN_NAME}" images list-sumally \
   ; CODE=$((CODE+$?))
-echo $ ${BIN_NAME} servers list-detail-short \
-  ; "${DIRECTORY}/${BIN_NAME}" servers list-detail-short \
+echo $ ${BIN_NAME} servers list-detail-sumally \
+  ; "${DIRECTORY}/${BIN_NAME}" servers list-detail-sumally \
   ; CODE=$((CODE+$?))
 if [ "${CODE}" -eq 0 ]; then
   printf "\e[1;32m%s\e[0m\n" "$(LANG=C date) [INFO]  -- git diff README.md Passed ----------------"
