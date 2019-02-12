@@ -24,14 +24,14 @@ fi
 ##
 printf "\e[1;37m%s\e[0m\n" "$(LANG=C date) [TEST]  -- ${BIN_NAME} Testing ----------------"
 CODE=0
-echo $ ${BIN_NAME} version \
+echo "$ ${BIN_NAME} version" \
   ; "${DIRECTORY}/${BIN_NAME}" version \
   ; CODE=$((CODE+$?))
-echo $ ${BIN_NAME} images list-sumally \
-  ; "${DIRECTORY}/${BIN_NAME}" images list-sumally \
+echo "$ ${BIN_NAME} flavors list-sumally | jq '.flavors[] | select( .name == \"g-1gb\" )'" \
+  ; "${DIRECTORY}/${BIN_NAME}" flavors list-sumally | jq '.flavors[] | select( .name == "g-1gb" )' \
   ; CODE=$((CODE+$?))
-echo $ ${BIN_NAME} servers list-detail-sumally \
-  ; "${DIRECTORY}/${BIN_NAME}" servers list-detail-sumally \
+echo "$ ${BIN_NAME} images list-sumally | jq '.images[] | select( .name == \"vmi-ubuntu-18.04-amd64-20gb\" )'" \
+  ; "${DIRECTORY}/${BIN_NAME}" images list-sumally | jq '.images[] | select( .name == "vmi-ubuntu-18.04-amd64-20gb" )' \
   ; CODE=$((CODE+$?))
 if [ "${CODE}" -eq 0 ]; then
   printf "\e[1;32m%s\e[0m\n" "$(LANG=C date) [INFO]  -- git diff README.md Passed ----------------"

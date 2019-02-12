@@ -177,6 +177,23 @@ ConoHaImagesListSumally() {
 
 
 ##
+# keypairs
+##
+ConoHaKeypairsList() {
+  # ref. https://www.conoha.jp/docs/compute-get_keypairs.html
+  ConoHaSetCredentials
+  conoha_api_response=$(
+    conoha_api_endpoint="https://compute.tyo1.conoha.io/v2/${CONOHA_TENANT_ID}/os-keypairs"
+    curl -sS -X GET "${conoha_api_endpoint}" \
+      -H 'Accept: application/json' \
+      -H "X-Auth-Token: ${CONOHA_TOKEN}" \
+  )
+  echo "${conoha_api_response}" | jq .
+}
+
+
+
+##
 # ports
 ##
 ConoHaPortsList() {
@@ -279,7 +296,7 @@ ConoHaServersCreate() {
     curl -sS -X POST "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
-      -d '{"server":{"flavorRef":"'"${conoha_flavor_id}"'","imageRef":"'"${conoha_image_id}"'","adminPass":"'"${conoha_root_password}"'","security_groups":[{"name":"default"},{"name":"gncs-ipv4-all"}],"user_data":"'"${conoha_userdata_base64_encoded}"'","metadata":{"instance_name_tag":"'"${conoha_name_tag}"'"}}}'
+      -d '{"server":{"flavorRef":"'"${conoha_flavor_id}"'","imageRef":"'"${conoha_image_id}"'","adminPass":"'"${conoha_root_password}"'","key_name":"'"${conoha_key_name}"'","security_groups":[{"name":"default"},{"name":"gncs-ipv4-all"}],"user_data":"'"${conoha_userdata_base64_encoded}"'","metadata":{"instance_name_tag":"'"${conoha_name_tag}"'"}}}'
   )
   echo "${conoha_api_response}" | jq .
 }
@@ -472,6 +489,12 @@ ConohaMain() {  ## main start DO NOT REMOVE ##
         list        ) ConoHaImagesList "$@" ;;
         list-sumally) ConoHaImagesListSumally "$@" ;;
         *           ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
+      esac ;;
+    keypairs)
+      case "${sub2_command}" in
+        subcmds) eval "${get_sub2_cmds}" ;;
+        list   ) ConoHaKeypairsList "$@" ;;
+        *      ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
       esac ;;
     ports)
       case "${sub2_command}" in

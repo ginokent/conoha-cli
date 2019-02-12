@@ -21,7 +21,7 @@ $ sudo mv /tmp/conoha /usr/local/bin/conoha
 $ . "$(conoha complete)"
 
 $ conoha  # <tab>
-configure       flavors         images          ports           securitygroups  servers         sg              subnets         tools           version
+configure       flavors         images          keypairs        ports           securitygroups  servers         subnets         tools           version
 ```
 
 ### Set Credentials
@@ -37,21 +37,9 @@ ConoHa API Account Password:
 ### Run
 
 ```console
-$ conoha images list
+$ conoha images list | jq '.images[] | select(.name | match("vmi-ubuntu-18.04-amd64-20gb")) | { name, id }'
 {
-  "images": [
-    [
-      {
-        "id": "5a026e16-1444-47e4-a3d1-300424c701a7",
-        "name": "vmi-centos-7.6-amd64-20gb"
-      },
-      {
-        "id": "5992339d-9eea-4dc8-9a68-54dbab070e33",
-        "name": "vmi-centos-7.6-amd64"
-      },
-      {
-        "id": "53b12ef5-702c-4559-b937-c4066f4ae0ec",
-        "name": "vmi-win2016dce-rdsoffice2016"
-      },
-  ...
+  "name": "vmi-ubuntu-18.04-amd64-20gb",
+  "id": "1ae808e4-f4ee-4ee6-adfc-0ba8c2bf67f3"
+}
 ```
