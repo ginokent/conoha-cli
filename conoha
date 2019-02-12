@@ -145,9 +145,10 @@ ConoHaFlavorsList() {
   echo "${conoha_api_response}" | jq .
 }
 
-ConoHaFlavorsListShort() {
+ConoHaFlavorsListSumally() {
   conoha_api_response=$(ConoHaFlavorsList "$@")
   echo "${conoha_api_response}" | jq '.flavors[] | { id, name }' | jq -s '{ flavors: . }'
+  #echo "${conoha_api_response}" | jq '.flavors[] | { "Key": .name, "Value": .id }' | jq -s 'sort_by( .Key ) | from_entries | { flavors: . }'
 }
 
 
@@ -167,9 +168,10 @@ ConoHaImagesList() {
   echo "${conoha_api_response}" | jq .
 }
 
-ConoHaImagesListShort() {
+ConoHaImagesListSumally() {
   conoha_api_response=$(ConoHaImagesList "$@")
   echo "${conoha_api_response}" | jq '.images[] | { id, name }' | jq -s '{ images: . }'
+  #echo "${conoha_api_response}" | jq '.images[] | { "Key": .name, "Value": .id }' | jq -s 'sort_by( .Key ) | from_entries | { images: . }'
 }
 
 
@@ -189,7 +191,7 @@ ConoHaPortsList() {
   echo "${conoha_api_response}" | jq .
 }
 
-ConoHaPortsListShort() {
+ConoHaPortsListSumally() {
   conoha_api_response=$(ConoHaPortsList "$@")
   echo "${conoha_api_response}" | jq '.ports[] | { id, network_id, fixed_ips }' | jq -s '{ ports: . }'
 }
@@ -239,7 +241,7 @@ ConoHaSecurityGroupsList() {
   echo "${conoha_api_response}" | jq .
 }
 
-ConoHaSecurityGroupsListShort() {
+ConoHaSecurityGroupsListSumally() {
   conoha_api_response=$(ConoHaSecurityGroupsList "$@")
   echo "${conoha_api_response}" | jq '.security_groups[] | { tenant_id, description, id, name }' | jq -s '{ security_groups: . }'
 }
@@ -306,7 +308,7 @@ ConoHaServersListDetail() {
   echo "${conoha_api_response}" | jq .
 }
 
-ConoHaServersListDetailShort() {
+ConoHaServersListDetailSumally() {
   conoha_api_response=$(ConoHaServersListDetail "$@")
   echo "${conoha_api_response}" | jq '.servers[] | { name_tag: .metadata.instance_name_tag, id, name, status, addresses: [(.addresses[] | .[] | .addr)] }' | jq -s '{ servers: . }'
 }
@@ -440,33 +442,33 @@ ConohaMain() {  ## main start DO NOT REMOVE ##
       esac ;;
     flavors)
       case "${sub2_command}" in
-        subcmds   ) eval "${get_sub2_cmds}" ;;
-        list      ) ConoHaFlavorsList "$@" ;;
-        list-short) ConoHaFlavorsListShort "$@" ;;
-        *         ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
+        subcmds     ) eval "${get_sub2_cmds}" ;;
+        list        ) ConoHaFlavorsList "$@" ;;
+        list-sumally) ConoHaFlavorsListSumally "$@" ;;
+        *           ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
       esac ;;
     images)
       case "${sub2_command}" in
-        subcmds   ) eval "${get_sub2_cmds}" ;;
-        list      ) ConoHaImagesList "$@" ;;
-        list-short) ConoHaImagesListShort "$@" ;;
-        *         ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
+        subcmds     ) eval "${get_sub2_cmds}" ;;
+        list        ) ConoHaImagesList "$@" ;;
+        list-sumally) ConoHaImagesListSumally "$@" ;;
+        *           ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
       esac ;;
     ports)
       case "${sub2_command}" in
-        subcmds   ) eval "${get_sub2_cmds}" ;;
-        create    ) ConoHaPortsCreate "$@" ;;
-        delete    ) ConoHaPortsDelete "$@" ;;
-        list      ) ConoHaPortsList "$@" ;;
-        list-short) ConoHaPortsListShort "$@" ;;
-        *         ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
+        subcmds     ) eval "${get_sub2_cmds}" ;;
+        create      ) ConoHaPortsCreate "$@" ;;
+        delete      ) ConoHaPortsDelete "$@" ;;
+        list        ) ConoHaPortsList "$@" ;;
+        list-sumally) ConoHaPortsListSumally "$@" ;;
+        *           ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
       esac ;;
     securitygroups)
       case "${sub2_command}" in
-        subcmds   ) eval "${get_sub2_cmds}" ;;
-        list      ) ConoHaSecurityGroupsList "$@" ;;
-        list-short) ConoHaSecurityGroupsListShort "$@" ;;
-        *         ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
+        subcmds     ) eval "${get_sub2_cmds}" ;;
+        list        ) ConoHaSecurityGroupsList "$@" ;;
+        list-sumally) ConoHaSecurityGroupsListSumally "$@" ;;
+        *           ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
       esac ;;
     servers)
       case "${sub2_command}" in
@@ -476,7 +478,7 @@ ConohaMain() {  ## main start DO NOT REMOVE ##
         delete             ) ConoHaServersDelete "$@" ;;
         list-attached-ports) ConoHaServersListAttachedPorts "$@" ;;
         list-detail        ) ConoHaServersListDetail "$@" ;;
-        list-detail-short  ) ConoHaServersListDetailShort "$@" ;;
+        list-detail-sumally) ConoHaServersListDetailSumally "$@" ;;
         start              ) ConoHaServersStart "$@" ;;
         stop               ) ConoHaServersStop "$@" ;;
         *                  ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
