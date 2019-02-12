@@ -302,7 +302,7 @@ ConoHaServersCreate() {
   conoha_flavor_id="${1:?"$(printf '\n%s\n%s\n%s' "Set \$1 as VM Flavor ID (e.g. \"d92b02ce-9a4f-4544-8d7f-ae8380bc08e7\")" "See:" "  $ conoha flavors list")"}"
   conoha_image_id="${2:?"$(printf '\n%s\n%s\n%s' "Set \$2 as VM Image ID (e.g. \"2322444e-9000-47a8-a425-45fdef52d031\")" "See:" "  $ conoha images list")"}"
   conoha_root_password="${3:?"$(printf '\n%s' "Set \$3 as VM OS Password (e.g. \"P@ssw0rd\")")"}"
-  conoha_key_name="${4:?"$(printf '\n%s' "Set \$4 as VM OS Password (e.g. \"P@ssw0rd\")")"}"
+  conoha_key_name="${4:?"$(printf '\n%s\n%s\n%s' "Set \$4 as VM OS Keypair Name (e.g. \"foobar\")" "See:" "  $ conoha keypairs list")"}"
   conoha_userdata_base64_encoded="${5:?"$(printf '\n%s\n%s\n%s' "Set \$5 as base64-encoded userdata (e.g. \"IyEvYmluL2Jhc2gK...\")" "If you want to encode base64, run:" "  $ cat \"\${YOUR_USER_DATA_FILE:?}\" | openssl base64")"}"
   conoha_name_tag="${6:?"$(printf '\n%s' "Set \$6 as VM Name Tag (e.g. \"bastion\")")"}"
   ConoHaSetCredentials
@@ -428,16 +428,43 @@ ConoHaToolsGetFlavor1GB() {
 }
 
 ConoHaToolsServersCreateK8sClusterSingleMaster() {
-  set -x
+  set -x  ## for DEBUG
   conoha_log=~/.conoha.log
   touch "${conoha_log}"
   chmod go-rwx "${conoha_log}"
+  conoha_key_file="${HOME}/.ssh/id_rsa"
   conoha_flavor_id="7eea7469-0d85-4f82-8050-6ae742394681"  ## g-1gb 810JPY/month
   conoha_image_id="1ae808e4-f4ee-4ee6-adfc-0ba8c2bf67f3"  ## vmi-ubuntu-18.04-amd64-20gb
-  conoha_root_password="$(LANG=C LC_ALL=C tr -dc 0-9A-Za-z </dev/urandom | head -c 16)"
+  conoha_root_password=$(LANG=C LC_ALL=C tr -dc 0-9A-Za-z </dev/urandom | head -c 16 || true)
+  conoha_key_name="k8s001"
+  conoha_userdata_base64_encoded=$(curl -LRsS https://djeeno.gitlab.io/userdata/setup-k8s-master.sh | ConoHaBase64Encode)
   conoha_name_tag="k8s001master001"
-  echo "{\"timestamp\":\"$(TZ=UTC date +%Y%m%dT%H%M%SZ)\",\"name_tag\":\"${conoha_name_tag}\",\"root_password\":\"${conoha_root_password}\"}" >>"${conoha_log}"
-  ConoHaServersCreate "${conoha_flavor_id}" "${conoha_image_id}" "${conoha_root_password}"
+  if [ "$(ConoHaKeypairsList | jq '.keypairs[] | select( .keypair.name == "'"${conoha_key_name}"'" ) | any(.)')" != true ]; then
+    if grep -q ssh- "${conoha_key_file}.pub"; then
+      PrintStderr "You need ${conoha_key_file}.pub"
+      PrintStderr "  $ echo | ssh-keygen -t rsa -N '' -f \"${conoha_key_file}\""
+      exit 1
+    fi
+    ConoHaKeypairsUpload "${conoha_key_name}" "$(cat ~/.ssh/id_rsa.pub)"
+  fi
+  if [ "$(ConoHaServersListDetail | jq '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_name_tag}"'" ) | any(.)')" != true ]; then
+    conoha_server_create_response=$(ConoHaServersCreate "${conoha_flavor_id}" "${conoha_image_id}" "${conoha_root_password}" "${conoha_key_name}" "${conoha_userdata_base64_encoded}" "${conoha_name_tag}")
+    echo "${conoha_server_create_response}" | jq -r . >>"${conoha_log}"
+  fi
+  conoha_servers_list_detail_response=$(ConoHaServersListDetail)
+  SSH_USER="root"
+  SSH_HOST=
+  while true; do
+    SSH_HOST=$(
+      echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_name_tag}"'" ) | .addresses | .[] | .[] | select( .version == 4 ) | .addr'
+    )
+    [ -z "${SSH_HOST}" ] || break
+    sleep 5
+    echo waiting...
+  done
+  SSH_OPTIONS="-o IdentityFile=${conoha_key_file} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o User=${SSH_USER}"
+  # shellcheck disable=SC2086
+  echo ssh ${SSH_OPTIONS} "${SSH_HOST}"
 }
 
 
