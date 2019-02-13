@@ -18,10 +18,10 @@ $ sudo mv /tmp/conoha /usr/local/bin/conoha
 ### Tab completion
 
 ```console
-$ . "$(conoha complete)"
+$ . "$(conoha completion)"
 
 $ conoha  # <tab>
-configure       flavors         images          keypairs        ports           securitygroups  servers         subnets         tools           version
+configure       flavors         images          keypairs        networks        ports           securitygroups  servers         subnets         tools           version
 ```
 
 ### Set Credentials
