@@ -515,7 +515,7 @@ ConoHaToolsGetFlavor1GB() {
 }
 
 ConoHaToolsServersCreateK8sClusterSingleMaster() {
-  #set -x  ## for DEBUG
+  set -x  ## for DEBUG
   conoha_log=~/.conoha.log ; touch "${conoha_log}" ; chmod go-rwx "${conoha_log}"
   conoha_k8s_admin_config_file=~/.conoha.kubernetes.admin.conf ; touch "${conoha_k8s_admin_config_file}" ; chmod go-rwx "${conoha_k8s_admin_config_file}"
   # TODO: k8sクラスタをInternalで構築したかった
@@ -607,11 +607,10 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   ##
   SSH_USER="root"
   SSH_OPTIONS="-o IdentityFile=${conoha_key_file} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o User=${SSH_USER}"
-  conoha_servers_list_detail_response=$(ConoHaServersListDetail)
   conoha_ssh_host_k8s_master001=
   while true; do
     conoha_ssh_host_k8s_master001=$(
-      echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_master001_name_tag}"'" ) | .addresses | .[] | .[] | select( .version == 4 ) | .addr'
+      ConoHaServersListDetail | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_master001_name_tag}"'" ) | .addresses | .[] | .[] | select( .version == 4 ) | .addr'
     )
     [ -z "${conoha_ssh_host_k8s_master001}" ] || break
     sleep 10
@@ -645,11 +644,10 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   ##
   # Kubernetes worker001 node に sshできるようになるまで待つ
   ##
-  conoha_servers_list_detail_response=$(ConoHaServersListDetail)
   conoha_ssh_host_k8s_worker001=
   while true; do
     conoha_ssh_host_k8s_worker001=$(
-      echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_worker001_name_tag}"'" ) | .addresses | .[] | .[] | select( .version == 4 )   | .addr'
+      ConoHaServersListDetail | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_worker001_name_tag}"'" ) | .addresses | .[] | .[] | select( .version == 4 )   | .addr'
     )
     [ -z "${conoha_ssh_host_k8s_worker001}" ] || break
     sleep 10
