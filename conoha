@@ -660,11 +660,11 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
     PrintStderr "Waiting to ssh to \"${conoha_k8s_worker001_name_tag}\" ..."
   done
   ##
-  PrintStderr "Uploading ~/.kube/config to worker node in order to execute the kubectl command on worker node."
+  PrintStderr "Uploading ~/.kube/config to worker node in order to execute kubectl command on worker node ..."
   # shellcheck disable=SC2086,SC2029
   ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_worker001}" "[ -f ~/.kube/config ] || { mkdir -p ~/.kube; echo '${conoha_k8s_admin_config_content}' >~/.kube/config; }" 2>>"${conoha_log}"
   ##
-  PrintStderr "If the worker node does not participate in the kubernetes cluster, it joins the cluster."
+  PrintStderr "Joining the cluster if worker node does not participate in kubernetes cluster ..."
   # shellcheck disable=SC2086,SC2029
   ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_worker001}" "kubectl get nodes | tee /dev/stderr | grep -q \"^\$(hostname --short | cut -b1-16)\" || ${conoha_k8s_worker_join_command}" 2>>"${conoha_log}"
   ##
