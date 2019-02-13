@@ -671,9 +671,9 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   # for access
   ##
   PrintStderr "If connecting to master node \"${conoha_k8s_master001_name_tag}\", do the following:"
-  PrintStderr "  $ ssh ${SSH_OPTIONS} ${conoha_ssh_host_k8s_master001}"
+  PrintStderr "  $ ssh ${SSH_OPTIONS} ${conoha_ssh_host_k8s_master001}  ## ${conoha_k8s_master001_name_tag}"
   PrintStderr "If connecting to worker node \"${conoha_k8s_worker001_name_tag}\", do the following:"
-  PrintStderr "  $ ssh ${SSH_OPTIONS} ${conoha_ssh_host_k8s_worker001}"
+  PrintStderr "  $ ssh ${SSH_OPTIONS} ${conoha_ssh_host_k8s_worker001}  ## ${conoha_k8s_worker001_name_tag}"
 }
 
 
