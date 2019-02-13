@@ -329,6 +329,18 @@ ConoHaServersDelete() {
   echo "${conoha_api_response}" | jq .
 }
 
+ConoHaServersList() {
+  # ref. https://www.conoha.jp/docs/compute-get_vms_list.html
+  ConoHaSetCredentials
+  conoha_api_response=$(
+    conoha_api_endpoint="https://compute.tyo1.conoha.io/v2/${CONOHA_TENANT_ID}/servers"
+    curl -sS -X GET "${conoha_api_endpoint}" \
+      -H 'Accept: application/json' \
+      -H "X-Auth-Token: ${CONOHA_TOKEN}" \
+  )
+  echo "${conoha_api_response}" | jq .
+}
+
 ConoHaServersListDetail() {
   # ref. https://www.conoha.jp/docs/compute-get_vms_detail.html
   ConoHaSetCredentials
@@ -447,9 +459,18 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
     fi
     ConoHaKeypairsUpload "${conoha_key_name}" "$(cat ~/.ssh/id_rsa.pub)"
   fi
-  if [ "$(ConoHaServersListDetail | jq '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_name_tag}"'" ) | any(.)')" != true ]; then
+  conoha_servers_list_detail_response=$(ConoHaServersListDetail)
+  if [ "$(echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_name_tag}"'" ) | any(.)')" != true ]; then
     conoha_server_create_response=$(ConoHaServersCreate "${conoha_flavor_id}" "${conoha_image_id}" "${conoha_root_password}" "${conoha_key_name}" "${conoha_userdata_base64_encoded}" "${conoha_name_tag}")
     echo "${conoha_server_create_response}" | jq -r . >>"${conoha_log}"
+  else
+    conoha_k8s_master_status=$(echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_name_tag}"'" ) | .status')
+    if [ "${conoha_k8s_master_status}" != "ACTIVE" ]; then
+      PrintStderr "${conoha_name_tag} already exists, but status is ${conoha_k8s_master_status}"
+      PrintStderr "See:"
+      PrintStderr "  $ conoha servers list-detail | jq '.servers[] | select( .metadata.instance_name_tag == \"${conoha_name_tag}\" )'"
+      exit 0
+    fi
   fi
   conoha_servers_list_detail_response=$(ConoHaServersListDetail)
   SSH_USER="root"
@@ -562,6 +583,7 @@ ConohaMain() {  ## main start DO NOT REMOVE ##
         create             ) ConoHaServersCreate "$@" ;;
         delete             ) ConoHaServersDelete "$@" ;;
         list-attached-ports) ConoHaServersListAttachedPorts "$@" ;;
+        list               ) ConoHaServersList "$@" ;;
         list-detail        ) ConoHaServersListDetail "$@" ;;
         list-detail-sumally) ConoHaServersListDetailSumally "$@" ;;
         start              ) ConoHaServersStart "$@" ;;
