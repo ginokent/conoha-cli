@@ -209,6 +209,48 @@ ConoHaKeypairsUpload() {
 
 
 ##
+# networks
+##
+ConoHaNetworksCreateLocalNetwork() {
+  # ref. https://www.conoha.jp/docs/neutron-add_network.html
+  ConoHaSetCredentials
+  conoha_api_response=$(
+    conoha_api_endpoint="https://networking.tyo1.conoha.io/v2.0/networks"
+    curl -sS -X POST "${conoha_api_endpoint}" \
+      -H 'Accept: application/json' \
+      -H "X-Auth-Token: ${CONOHA_TOKEN}" \
+  )
+  echo "${conoha_api_response}" | jq .
+}
+
+ConoHaNetworksDelete() {
+  # ref. https://www.conoha.jp/docs/neutron-remove_network.html
+  conoha_network_id="${1:?"$(printf '\n%s\n%s\n%s' "Set \$1 as Network ID (e.g. \"ffffffff-ffff-ffff-ffff-ffffffffffff\")" "See:" "  $ conoha networks list")"}"
+  ConoHaSetCredentials
+  conoha_api_response=$(
+    conoha_api_endpoint="https://networking.tyo1.conoha.io/v2.0/networks/${conoha_network_id}"
+    curl -sS -X DELETE "${conoha_api_endpoint}" \
+      -H 'Accept: application/json' \
+      -H "X-Auth-Token: ${CONOHA_TOKEN}" \
+  )
+  echo "${conoha_api_response}" | jq .
+}
+
+ConoHaNetworksList() {
+  # ref. https://www.conoha.jp/docs/neutron-get_networks_list.html
+  ConoHaSetCredentials
+  conoha_api_response=$(
+    conoha_api_endpoint="https://networking.tyo1.conoha.io/v2.0/networks"
+    curl -sS -X GET "${conoha_api_endpoint}" \
+      -H 'Accept: application/json' \
+      -H "X-Auth-Token: ${CONOHA_TOKEN}" \
+  )
+  echo "${conoha_api_response}" | jq .
+}
+
+
+
+##
 # ports
 ##
 ConoHaPortsList() {
@@ -402,6 +444,34 @@ ConoHaServersStop() {
 ##
 # subnets
 ##
+ConoHaSubnetsCreateLocalSubnet() {
+  # ref. https://www.conoha.jp/docs/neutron-add_network.html
+  conoha_subnet_network_id="${1:?"$(printf '\n%s\n%s\n%s' "Set \$1 as Network ID (e.g. \"ffffffff-ffff-ffff-ffff-ffffffffffff\")" "See:" "  $ conoha networks list")"}"
+  conoha_subnet_cidr="${2:?"$(printf '\n%s' "Set \$2 as Subnet CIDR (e.g. \"192.168.58.0/24\") bitmask require 21-27")"}"
+  ConoHaSetCredentials
+  conoha_api_response=$(
+    conoha_api_endpoint="https://networking.tyo1.conoha.io/v2.0/subnets"
+    curl -sS -X POST "${conoha_api_endpoint}" \
+      -H 'Accept: application/json' \
+      -H "X-Auth-Token: ${CONOHA_TOKEN}" \
+      -d '{"subnet": {"network_id": "'"${conoha_subnet_network_id}"'", "cidr": "'"${conoha_subnet_cidr}"'"}}' \
+  )
+  echo "${conoha_api_response}" | jq .
+}
+
+ConoHaSubnetsDelete() {
+  # ref. https://www.conoha.jp/docs/neutron-remove_subnet.html
+  conoha_subnet_id="${1:?"$(printf '\n%s\n%s\n%s' "Set \$1 as Subnet ID (e.g. \"ffffffff-ffff-ffff-ffff-ffffffffffff\")" "See:" "  $ conoha subnets list")"}"
+  ConoHaSetCredentials
+  conoha_api_response=$(
+    conoha_api_endpoint="https://networking.tyo1.conoha.io/v2.0/subnets/${conoha_subnet_id}"
+    curl -sS -X DELETE "${conoha_api_endpoint}" \
+      -H 'Accept: application/json' \
+      -H "X-Auth-Token: ${CONOHA_TOKEN}" \
+  )
+  echo "${conoha_api_response}" | jq .
+}
+
 ConoHaSubnetsList() {
   # ref. https://www.conoha.jp/docs/neutron-get_subnets_list.html
   ConoHaSetCredentials
@@ -440,7 +510,7 @@ ConoHaToolsGetFlavor1GB() {
 }
 
 ConoHaToolsServersCreateK8sClusterSingleMaster() {
-  set -x  ## for DEBUG
+  #set -x  ## for DEBUG
   conoha_log=~/.conoha.log
   touch "${conoha_log}"
   chmod go-rwx "${conoha_log}"
@@ -452,12 +522,16 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   conoha_userdata_base64_encoded=$(curl -LRsS https://djeeno.gitlab.io/userdata/setup-k8s-master.sh | ConoHaBase64Encode)
   conoha_name_tag="k8s001master001"
   if [ "$(ConoHaKeypairsList | jq '.keypairs[] | select( .keypair.name == "'"${conoha_key_name}"'" ) | any(.)')" != true ]; then
-    if grep -q ssh- "${conoha_key_file}.pub"; then
+    if ! grep -q ssh- "${conoha_key_file}.pub"; then
       PrintStderr "You need ${conoha_key_file}.pub"
       PrintStderr "  $ echo | ssh-keygen -t rsa -N '' -f \"${conoha_key_file}\""
       exit 1
     fi
     ConoHaKeypairsUpload "${conoha_key_name}" "$(cat ~/.ssh/id_rsa.pub)"
+  else
+    PrintStderr "Keypair \"${conoha_key_name}\" already exists so using it"
+    PrintStderr "See:"
+    PrintStderr "  $ conoha keypairs list | jq '.keypairs[] | select( .name == \"${conoha_key_name}\" )'"
   fi
   conoha_servers_list_detail_response=$(ConoHaServersListDetail)
   if [ "$(echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_name_tag}"'" ) | any(.)')" != true ]; then
@@ -466,7 +540,7 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   else
     conoha_k8s_master_status=$(echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_name_tag}"'" ) | .status')
     if [ "${conoha_k8s_master_status}" != "ACTIVE" ]; then
-      PrintStderr "${conoha_name_tag} already exists, but status is ${conoha_k8s_master_status}"
+      PrintStderr "${conoha_name_tag} already exists, but status is \"${conoha_k8s_master_status}\""
       PrintStderr "See:"
       PrintStderr "  $ conoha servers list-detail | jq '.servers[] | select( .metadata.instance_name_tag == \"${conoha_name_tag}\" )'"
       exit 0
@@ -481,7 +555,7 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
     )
     [ -z "${SSH_HOST}" ] || break
     sleep 5
-    echo waiting...
+    PrintStderr waiting...
   done
   SSH_OPTIONS="-o IdentityFile=${conoha_key_file} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o User=${SSH_USER}"
   # shellcheck disable=SC2086
@@ -560,6 +634,14 @@ ConohaMain() {  ## main start DO NOT REMOVE ##
         upload ) ConoHaKeypairsUpload "$@" ;;
         *      ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
       esac ;;
+    networks)
+      case "${sub2_command}" in
+        subcmds             ) eval "${get_sub2_cmds}" ;;
+        create-local-network) ConoHaNetworksCreateLocalNetwork "$@" ;;
+        delete              ) ConoHaNetworksDelete "$@" ;;
+        list                ) ConoHaNetworksList "$@" ;;
+        *                   ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
+      esac ;;
     ports)
       case "${sub2_command}" in
         subcmds     ) eval "${get_sub2_cmds}" ;;
@@ -592,9 +674,11 @@ ConohaMain() {  ## main start DO NOT REMOVE ##
       esac ;;
     subnets)
       case "${sub2_command}" in
-        subcmds) eval "${get_sub2_cmds}" ;;
-        list   ) ConoHaSubnetsList "$@" ;;
-        *      ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
+        subcmds            ) eval "${get_sub2_cmds}" ;;
+        create-local-subnet) ConoHaSubnetsCreateLocalSubnet "$@" ;;
+        delete             ) ConoHaSubnetsDelete "$@" ;;
+        list               ) ConoHaSubnetsList "$@" ;;
+        *                  ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
       esac ;;
     tools)
       case "${sub2_command}" in
