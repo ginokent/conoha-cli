@@ -515,7 +515,7 @@ ConoHaToolsGetFlavor1GB() {
 }
 
 ConoHaToolsServersCreateK8sClusterSingleMaster() {
-  #set -x  ## for DEBUG
+  set -x  ## for DEBUG
   conoha_log=~/.conoha.log
   touch "${conoha_log}"
   chmod go-rwx "${conoha_log}"
@@ -579,7 +579,7 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
     echo "${conoha_server_create_response}" | jq -r . >>"${conoha_log}"
   else
     conoha_k8s_master001_status=$(echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_master001_name_tag}"'" ) | .status')
-    if [ "${conoha_k8s_master001_status}" != "ACTIVE" ]; then
+    if [ "${conoha_k8s_master001_status}" != "ACTIVE" ] && [ "${conoha_k8s_master001_status}" != "BUILD" ]; then
       PrintStderr "Server \"${conoha_k8s_master001_name_tag}\" already exists, but status is \"${conoha_k8s_master001_status}\""
       PrintStderr "See:"
       PrintStderr "  $ conoha servers list-detail | jq '.servers[] | select( .metadata.instance_name_tag == \"${conoha_k8s_master001_name_tag}\" )'"
@@ -595,7 +595,7 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
     echo "${conoha_server_create_response}" | jq -r . >>"${conoha_log}"
   else
     conoha_k8s_worker001_status=$(echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_worker001_name_tag}"'" ) | .status')
-    if [ "${conoha_k8s_worker001_status}" != "ACTIVE" ]; then
+    if [ "${conoha_k8s_worker001_status}" != "ACTIVE" ] && [ "${conoha_k8s_worker001_status}" != "BUILD" ]; then
       PrintStderr "Server \"${conoha_k8s_worker001_name_tag}\" already exists, but status is \"${conoha_k8s_worker001_status}\""
       PrintStderr "See:"
       PrintStderr "  $ conoha servers list-detail | jq '.servers[] | select( .metadata.instance_name_tag == \"${conoha_k8s_worker001_name_tag}\" )'"
@@ -644,7 +644,7 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   done
   echo "ssh ${SSH_OPTIONS} ${conoha_ssh_host_k8s_worker001}  ## k8s001worker001"
   # shellcheck disable=SC2086,SC2029
-  ssh ${SSH_OPTIONS} "${conoha_ssh_host_k8s_worker001}" "${conoha_k8s_worker_join_command}"
+  ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_worker001}" "${conoha_k8s_worker_join_command}"
 }
 
 
