@@ -236,7 +236,7 @@ ConoHaNetworksDelete() {
   echo "${conoha_api_response}" | jq .
 }
 
-ConoHaNetworksList() {
+ConoHaNetworksListLocalNetworks() {
   # ref. https://www.conoha.jp/docs/neutron-get_networks_list.html
   ConoHaSetCredentials
   conoha_api_response=$(
@@ -245,7 +245,7 @@ ConoHaNetworksList() {
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
   )
-  echo "${conoha_api_response}" | jq .
+  echo "${conoha_api_response}" | jq -r '.networks[] | select( .name | startswith("local-") )' | jq -s '{ networks: . }'
 }
 
 
@@ -481,7 +481,17 @@ ConoHaSubnetsList() {
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
   )
-  echo "${conoha_api_response}" | jq .
+  echo "${conoha_api_response}" | jq -r .
+}
+
+ConoHaSubnetsListLocalSubnets() {
+  conoha_api_response=$(ConoHaSubnetsList "$@")
+  echo "${conoha_api_response}" | jq -r '.subnets[] | select( .name | startswith("local-") )' | jq -s '{ subnets: . }'
+}
+
+ConoHaSubnetsListAdditionalIPAddresses() {
+  conoha_api_response=$(ConoHaSubnetsList "$@")
+  echo "${conoha_api_response}" | jq '.subnets[] | select( .cidr | match("/32") )' | jq -s '{ subnets: . }'
 }
 
 
@@ -489,11 +499,6 @@ ConoHaSubnetsList() {
 ##
 # tools
 ##
-ConoHaToolsSubnetsListAdditionalIPAddresses() {
-  conoha_api_response=$(ConoHaSubnetsList "$@")
-  echo "${conoha_api_response}" | jq '.subnets[] | select(.cidr | match("/32"))' | jq -s '{ subnets: . }'
-}
-
 ConoHaToolsGetImageUbuntu1804() {
   conoha_api_response=$(ConoHaImagesList "$@")
   echo "${conoha_api_response}" | jq '.images | sort_by(.name) | .[] | select(.name | match("vmi-ubuntu-18.04-amd64-20gb"))'
@@ -514,6 +519,10 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   conoha_log=~/.conoha.log
   touch "${conoha_log}"
   chmod go-rwx "${conoha_log}"
+  # TODO: k8sクラスタをInternalで構築したかった
+  #local#conoha_subnet_name="local-10-5-8-0-24"
+  #local#conoha_subnet_cidr="10.5.8.0/24"
+  #local#conoha_master001_ipaddress="10.5.8.101"
   conoha_key_file="${HOME}/.ssh/id_rsa"
   conoha_flavor_id="7eea7469-0d85-4f82-8050-6ae742394681"  ## g-1gb 810JPY/month
   conoha_image_id="1ae808e4-f4ee-4ee6-adfc-0ba8c2bf67f3"  ## vmi-ubuntu-18.04-amd64-20gb
@@ -521,6 +530,32 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   conoha_key_name="k8s001"
   conoha_userdata_base64_encoded=$(curl -LRsS https://djeeno.gitlab.io/userdata/setup-k8s-master.sh | ConoHaBase64Encode)
   conoha_name_tag="k8s001master001"
+  #local###
+  #local## サブネット作成
+  #local###
+  #local#if [ "$(ConoHaSubnetsList | jq -r '.subnets[] | select( .name == "'"${conoha_subnet_name}"'" ) | any(.)')" ]; then 
+  #local#  # local- で始まるネットワークが存在しない場合作成する
+  #local#  conoha_api_response=$(ConoHaNetworksCreateLocalNetwork)
+  #local#  conoha_network_id=$(echo "${conoha_api_response}" | jq -r .network.id)
+  #local#  if [ -z "${conoha_network_id}" ]; then
+  #local#    PrintStderr "failed to \"conoha networks create-local-network\""
+  #local#    exit 1
+  #local#  fi
+  #local#  # subnet 作成
+  #local#  ConoHaSubnetsCreateLocalSubnet "${conoha_network_id}" "${conoha_subnet_cidr}"
+  #local#fi
+  #local###
+  #local## ポート作成
+  #local###
+  #local#if [ "$(ConoHaPortsList | jq -r '.ports[] | select( .name | startswith("local-") ) | .fixed_ips[] | select( .ip_address == "'"${conoha_master001_ipaddress}"'" ) | any(.)')" != true ]; then
+  #local#  conoha_api_response=$(ConoHaSubnetsList)
+  #local#  conoha_network_id=$(echo "${conoha_api_response}" | jq -r '.subnets[] | select( .name == "'"${conoha_subnet_name}"'" ) | .network_id')
+  #local#  conoha_subnet_id=$(echo "${conoha_api_response}" | jq -r '.subnets[] | select( .name == "'"${conoha_subnet_name}"'" ) | .id')
+  #local#  ConoHaPortsCreate "${conoha_network_id}" "${conoha_subnet_id}" "${conoha_master001_ipaddress}"
+  #fi
+  ##
+  # キーペア作成
+  ##
   if [ "$(ConoHaKeypairsList | jq '.keypairs[] | select( .keypair.name == "'"${conoha_key_name}"'" ) | any(.)')" != true ]; then
     if ! grep -q ssh- "${conoha_key_file}.pub"; then
       PrintStderr "You need ${conoha_key_file}.pub"
@@ -533,6 +568,9 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
     PrintStderr "See:"
     PrintStderr "  $ conoha keypairs list | jq '.keypairs[] | select( .name == \"${conoha_key_name}\" )'"
   fi
+  ##
+  # サーバ作成
+  ##
   conoha_servers_list_detail_response=$(ConoHaServersListDetail)
   if [ "$(echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_name_tag}"'" ) | any(.)')" != true ]; then
     conoha_server_create_response=$(ConoHaServersCreate "${conoha_flavor_id}" "${conoha_image_id}" "${conoha_root_password}" "${conoha_key_name}" "${conoha_userdata_base64_encoded}" "${conoha_name_tag}")
@@ -546,6 +584,9 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
       exit 0
     fi
   fi
+  ##
+  # sshできるようになるまで待つ
+  ##
   conoha_servers_list_detail_response=$(ConoHaServersListDetail)
   SSH_USER="root"
   SSH_HOST=
@@ -559,7 +600,7 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   done
   SSH_OPTIONS="-o IdentityFile=${conoha_key_file} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o User=${SSH_USER}"
   # shellcheck disable=SC2086
-  echo ssh ${SSH_OPTIONS} "${SSH_HOST}"
+  echo "ssh ${SSH_OPTIONS} ${SSH_HOST}  ## k8s001master001"
 }
 
 
@@ -639,7 +680,7 @@ ConohaMain() {  ## main start DO NOT REMOVE ##
         subcmds             ) eval "${get_sub2_cmds}" ;;
         create-local-network) ConoHaNetworksCreateLocalNetwork "$@" ;;
         delete              ) ConoHaNetworksDelete "$@" ;;
-        list                ) ConoHaNetworksList "$@" ;;
+        list-local-networks ) ConoHaNetworksListLocalNetworks "$@" ;;
         *                   ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
       esac ;;
     ports)
@@ -674,17 +715,18 @@ ConohaMain() {  ## main start DO NOT REMOVE ##
       esac ;;
     subnets)
       case "${sub2_command}" in
-        subcmds            ) eval "${get_sub2_cmds}" ;;
-        create-local-subnet) ConoHaSubnetsCreateLocalSubnet "$@" ;;
-        delete             ) ConoHaSubnetsDelete "$@" ;;
-        list               ) ConoHaSubnetsList "$@" ;;
-        *                  ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
+        subcmds                    ) eval "${get_sub2_cmds}" ;;
+        create-local-subnet        ) ConoHaSubnetsCreateLocalSubnet "$@" ;;
+        delete                     ) ConoHaSubnetsDelete "$@" ;;
+        list                       ) ConoHaSubnetsList "$@" ;;
+        list-additional-ipaddresses) ConoHaSubnetsListAdditionalIPAddresses "$@" ;;
+        list-local-subnets         ) ConoHaSubnetsListLocalSubnets "$@" ;;
+        *                          ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
       esac ;;
     tools)
       case "${sub2_command}" in
         subcmds                                 ) eval "${get_sub2_cmds}" ;;
         servers-create-k8s-cluster-single-master) ConoHaToolsServersCreateK8sClusterSingleMaster "$@" ;;
-        subnet-list-additional-ipaddresses      ) ConoHaToolsSubnetsListAdditionalIPAddresses "$@" ;;
         get-image-ubuntu1804                    ) ConoHaToolsGetImageUbuntu1804 "$@" ;;
         get-flavor-512mb                        ) ConoHaToolsGetFlavor512MB "$@" ;;
         get-flavor-1gb                          ) ConoHaToolsGetFlavor1GB "$@" ;;
