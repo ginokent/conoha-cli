@@ -447,7 +447,7 @@ ConoHaServersStop() {
 ConoHaSubnetsCreateLocalSubnet() {
   # ref. https://www.conoha.jp/docs/neutron-add_network.html
   conoha_subnet_network_id="${1:?"$(printf '\n%s\n%s\n%s' "Set \$1 as Network ID (e.g. \"ffffffff-ffff-ffff-ffff-ffffffffffff\")" "See:" "  $ conoha networks list")"}"
-  conoha_subnet_cidr="${2:?"$(printf '\n%s' "Set \$2 as Subnet CIDR (e.g. \"192.168.58.0/24\") bitmask require 21-27")"}"
+  conoha_subnet_cidr="${2:?"$(printf '\n%s' "Set \$2 as Subnet CIDR (e.g. \"10.5.8.0/24\") bitmask require 21-27")"}"
   ConoHaSetCredentials
   conoha_api_response=$(
     conoha_api_endpoint="https://networking.tyo1.conoha.io/v2.0/subnets"
