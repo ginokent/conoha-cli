@@ -515,7 +515,7 @@ ConoHaToolsGetFlavor1GB() {
 }
 
 ConoHaToolsServersCreateK8sClusterSingleMaster() {
-  set -x  ## for DEBUG
+  #set -x  ## for DEBUG
   conoha_log=~/.conoha.log
   touch "${conoha_log}"
   chmod go-rwx "${conoha_log}"
@@ -565,10 +565,11 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
       exit 1
     fi
     ConoHaKeypairsUpload "${conoha_key_name}" "$(cat ~/.ssh/id_rsa.pub)"
-  else
-    PrintStderr "Keypair \"${conoha_key_name}\" already exists so using it"
-    PrintStderr "See:"
-    PrintStderr "  $ conoha keypairs list | jq '.keypairs[] | select( .name == \"${conoha_key_name}\" )'"
+  #else
+  #  # すでに存在する鍵を利用
+  #  PrintStderr "Keypair \"${conoha_key_name}\" already exists so using it"
+  #  PrintStderr "See:"
+  #  PrintStderr "  $ conoha keypairs list | jq '.keypairs[] | select( .name == \"${conoha_key_name}\" )'"
   fi
   ##
   # Kubernetes master001 node サーバ作成
@@ -576,7 +577,7 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   conoha_servers_list_detail_response=$(ConoHaServersListDetail)
   if [ "$(echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_master001_name_tag}"'" ) | any(.)')" != true ]; then
     conoha_server_create_response=$(ConoHaServersCreate "${conoha_flavor_id}" "${conoha_image_id}" "${conoha_root_password}" "${conoha_key_name}" "${conoha_userdata_base64_encoded_k8s_master}" "${conoha_k8s_master001_name_tag}")
-    echo "${conoha_server_create_response}" | jq -r . >>"${conoha_log}"
+    echo "${conoha_server_create_response}" | jq -cr . 1>>"${conoha_log}"
   else
     conoha_k8s_master001_status=$(echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_master001_name_tag}"'" ) | .status')
     if [ "${conoha_k8s_master001_status}" != "ACTIVE" ] && [ "${conoha_k8s_master001_status}" != "BUILD" ]; then
@@ -592,7 +593,7 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   conoha_servers_list_detail_response=$(ConoHaServersListDetail)
   if [ "$(echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_worker001_name_tag}"'" ) | any(.)')" != true ]; then
     conoha_server_create_response=$(ConoHaServersCreate "${conoha_flavor_id}" "${conoha_image_id}" "${conoha_root_password}" "${conoha_key_name}" "${conoha_userdata_base64_encoded_k8s_worker}" "${conoha_k8s_worker001_name_tag}")
-    echo "${conoha_server_create_response}" | jq -r . >>"${conoha_log}"
+    echo "${conoha_server_create_response}" | jq -cr . 1>>"${conoha_log}"
   else
     conoha_k8s_worker001_status=$(echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_worker001_name_tag}"'" ) | .status')
     if [ "${conoha_k8s_worker001_status}" != "ACTIVE" ] && [ "${conoha_k8s_worker001_status}" != "BUILD" ]; then
@@ -614,7 +615,7 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
       echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_master001_name_tag}"'" ) | .addresses | .[] | .[] | select( .version == 4 ) | .addr'
     )
     [ -z "${conoha_ssh_host_k8s_master001}" ] || break
-    sleep 5
+    sleep 10
     PrintStderr waiting ssh to master001 ...
   done
   echo "ssh ${SSH_OPTIONS} ${conoha_ssh_host_k8s_master001}  ## k8s001master001"
@@ -624,9 +625,9 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   conoha_k8s_worker_join_command=
   while true; do
     # shellcheck disable=SC2086
-    conoha_k8s_worker_join_command=$(ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_master001}" "grep -o 'kubeadm join .*$' /root/.userdata/output.log")
+    conoha_k8s_worker_join_command=$(ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_master001}" "grep -o 'kubeadm join .*$' /root/.userdata/output.log" 2>>"${conoha_log}" || true)
     [ -z "${conoha_k8s_worker_join_command}" ] || break
-    sleep 5
+    sleep 10
     PrintStderr waiting kubeadm init ...
   done
   ##
@@ -639,12 +640,12 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
       echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_worker001_name_tag}"'" ) | .addresses | .[] | .[] | select( .version == 4 )   | .addr'
     )
     [ -z "${conoha_ssh_host_k8s_worker001}" ] || break
-    sleep 5
+    sleep 10
     PrintStderr waiting ssh to worker001 ...
   done
   echo "ssh ${SSH_OPTIONS} ${conoha_ssh_host_k8s_worker001}  ## k8s001worker001"
   # shellcheck disable=SC2086,SC2029
-  ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_worker001}" "${conoha_k8s_worker_join_command}"
+  echo ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_worker001}" "${conoha_k8s_worker_join_command}"
 }
 
 
