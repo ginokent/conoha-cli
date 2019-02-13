@@ -570,9 +570,7 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
     ConoHaKeypairsUpload "${conoha_key_name}" "$(cat ~/.ssh/id_rsa.pub)"
   else
     # すでに存在する鍵を利用
-    PrintStderr "Keypair \"${conoha_key_name}\" already exists so using it"
-    PrintStderr "See:"
-    PrintStderr "  $ conoha keypairs list | jq '.keypairs[] | select( .name == \"${conoha_key_name}\" )'"
+    PrintStderr "Keypair \"${conoha_key_name}\" already exists so using it."
   fi
   ##
   # Kubernetes master001 node サーバ作成
@@ -611,7 +609,7 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   ##
   # Kubernetes master001 node に sshできるようになるまで待つ
   ##
-  PrintStderr "Connecting to server \"${conoha_k8s_master001_name_tag}\" ..."
+  PrintStderr "Checking to connect to server \"${conoha_k8s_master001_name_tag}\" ..."
   SSH_USER="root"
   SSH_OPTIONS="-o IdentityFile=${conoha_key_file} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o User=${SSH_USER}"
   conoha_ssh_host_k8s_master001=
@@ -623,9 +621,6 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
     sleep 10
     PrintStderr "Waiting to ssh to \"${conoha_k8s_master001_name_tag}\" ..."
   done
-  # k8s001master001
-  echo "If connecting to master node \"${conoha_k8s_master001_name_tag}\", do the following:"
-  echo "  $ ssh ${SSH_OPTIONS} ${conoha_ssh_host_k8s_master001}"
   ##
   # Kubernetes master001 node の kubeadm init の完了 ＆ kubeadm join コマンドの出力を待つ
   ##
@@ -654,7 +649,7 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   ##
   # Kubernetes worker001 node に sshできるようになるまで待つ
   ##
-  PrintStderr "Connecting to server \"${conoha_k8s_worker001_name_tag}\" ..."
+  PrintStderr "Checking to connect to server \"${conoha_k8s_worker001_name_tag}\" ..."
   conoha_ssh_host_k8s_worker001=
   while true; do
     conoha_ssh_host_k8s_worker001=$(
@@ -664,15 +659,21 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
     sleep 10
     PrintStderr "Waiting to ssh to \"${conoha_k8s_worker001_name_tag}\" ..."
   done
-  # k8s001worker001
-  PrintStderr "If connecting to worker node \"${conoha_k8s_worker001_name_tag}\", do the following:"
-  PrintStderr "  $ ssh ${SSH_OPTIONS} ${conoha_ssh_host_k8s_worker001}  ## k8s001worker001"
-  PrintStderr "Upload admin.conf to worker node in order to execute the kubectl command on worker node."
+  ##
+  PrintStderr "Uploading ~/.kube/config to worker node in order to execute the kubectl command on worker node."
   # shellcheck disable=SC2086,SC2029
   ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_worker001}" "[ -f ~/.kube/config ] || { mkdir -p ~/.kube; echo '${conoha_k8s_admin_config_content}' >~/.kube/config; }" 2>>"${conoha_log}"
+  ##
   PrintStderr "If the worker node does not participate in the kubernetes cluster, it joins the cluster."
   # shellcheck disable=SC2086,SC2029
   ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_worker001}" "kubectl get nodes | tee /dev/stderr | grep -q \"^\$(hostname --short | cut -b1-16)\" || ${conoha_k8s_worker_join_command}" 2>>"${conoha_log}"
+  ##
+  # for access
+  ##
+  PrintStderr "If connecting to master node \"${conoha_k8s_master001_name_tag}\", do the following:"
+  PrintStderr "  $ ssh ${SSH_OPTIONS} ${conoha_ssh_host_k8s_master001}"
+  PrintStderr "If connecting to worker node \"${conoha_k8s_worker001_name_tag}\", do the following:"
+  PrintStderr "  $ ssh ${SSH_OPTIONS} ${conoha_ssh_host_k8s_worker001}"
 }
 
 
