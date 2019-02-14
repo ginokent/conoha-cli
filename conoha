@@ -514,10 +514,11 @@ ConoHaToolsGetFlavor1GB() {
   echo "${conoha_api_response}" | jq '.flavors[] | select(.name == "g-1gb")'
 }
 
-ConoHaToolsServersCreateK8sClusterSingleMaster() {
+ConoHaK8sCreateClusterSingleMaster() {
   #set -x  ## for DEBUG
   conoha_log=~/.conoha.log ; touch "${conoha_log}" ; chmod go-rwx "${conoha_log}"
   conoha_k8s_admin_config_file=~/.conoha.kubernetes.admin.conf ; touch "${conoha_k8s_admin_config_file}" ; chmod go-rwx "${conoha_k8s_admin_config_file}"
+  conoha_k8s_cluster_name="${1:?"$(printf '\n%s' "Set \$1 as Kubernetes cluster name")"}"
   # TODO: k8sクラスタをInternalで構築したかった
   #local#conoha_subnet_name="local-10-5-8-0-24"
   #local#conoha_subnet_cidr="10.5.8.0/24"
@@ -526,14 +527,17 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   conoha_flavor_id="7eea7469-0d85-4f82-8050-6ae742394681"  ## g-1gb 810JPY/month
   conoha_image_id="1ae808e4-f4ee-4ee6-adfc-0ba8c2bf67f3"  ## vmi-ubuntu-18.04-amd64-20gb
   conoha_root_password=$(LANG=C LC_ALL=C tr -dc 0-9A-Za-z </dev/urandom | head -c 16 || true)
-  conoha_key_name="k8s001"
+  conoha_key_name="${conoha_k8s_cluster_name}"
+  conoha_k8s_master001_name_tag="${conoha_k8s_cluster_name}master001"
+  conoha_k8s_worker001_name_tag="${conoha_k8s_cluster_name}worker001"
+  conoha_k8s_worker002_name_tag="${conoha_k8s_cluster_name}worker002"
   PrintStderr "Checking userdata script https://djeeno.gitlab.io/userdata/setup-k8s-master.sh ..."
-  conoha_userdata_base64_encoded_k8s_master=$(curl -LRsS https://djeeno.gitlab.io/userdata/setup-k8s-master.sh | ConoHaBase64Encode)
+  conoha_userdata_master=$(curl -LRsS https://djeeno.gitlab.io/userdata/setup-k8s-master.sh)
   PrintStderr "Checking userdata script https://djeeno.gitlab.io/userdata/setup-k8s-worker.sh ..."
-  conoha_userdata_base64_encoded_k8s_worker=$(curl -LRsS https://djeeno.gitlab.io/userdata/setup-k8s-worker.sh | ConoHaBase64Encode)
-  conoha_k8s_master001_name_tag="k8s001master001"
-  conoha_k8s_worker001_name_tag="k8s001worker001"
-  conoha_k8s_worker002_name_tag="k8s001worker002"
+  conoha_userdata_worker=$(curl -LRsS https://djeeno.gitlab.io/userdata/setup-k8s-worker.sh)
+  conoha_userdata_base64_encoded_k8s_master001=$(echo "${conoha_userdata_master}" | sed "s/localhost/${conoha_k8s_master001_name_tag}/" | ConoHaBase64Encode)
+  conoha_userdata_base64_encoded_k8s_worker001=$(echo "${conoha_userdata_worker}" | sed "s/localhost/${conoha_k8s_worker001_name_tag}/" | ConoHaBase64Encode)
+  conoha_userdata_base64_encoded_k8s_worker002=$(echo "${conoha_userdata_worker}" | sed "s/localhost/${conoha_k8s_worker002_name_tag}/" | ConoHaBase64Encode)
   #local###
   #local## サブネット作成
   #local###
@@ -580,7 +584,7 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   conoha_servers_list_detail_response=$(ConoHaServersListDetail)
   if [ "$(echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_master001_name_tag}"'" ) | any(.)')" != true ]; then
     conoha_server_create_response=$(
-      ConoHaServersCreate "${conoha_flavor_id}" "${conoha_image_id}" "${conoha_root_password}" "${conoha_key_name}" "${conoha_userdata_base64_encoded_k8s_master}" "${conoha_k8s_master001_name_tag}"
+      ConoHaServersCreate "${conoha_flavor_id}" "${conoha_image_id}" "${conoha_root_password}" "${conoha_key_name}" "${conoha_userdata_base64_encoded_k8s_master001}" "${conoha_k8s_master001_name_tag}"
     )
     echo "${conoha_server_create_response}" | jq -cr . 1>>"${conoha_log}"
   else
@@ -599,7 +603,7 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   conoha_servers_list_detail_response=$(ConoHaServersListDetail)
   if [ "$(echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_worker001_name_tag}"'" ) | any(.)')" != true ]; then
     conoha_server_create_response=$(
-      ConoHaServersCreate "${conoha_flavor_id}" "${conoha_image_id}" "${conoha_root_password}" "${conoha_key_name}" "${conoha_userdata_base64_encoded_k8s_worker}" "${conoha_k8s_worker001_name_tag}"
+      ConoHaServersCreate "${conoha_flavor_id}" "${conoha_image_id}" "${conoha_root_password}" "${conoha_key_name}" "${conoha_userdata_base64_encoded_k8s_worker001}" "${conoha_k8s_worker001_name_tag}"
     )
     echo "${conoha_server_create_response}" | jq -cr . 1>>"${conoha_log}"
   else
@@ -618,7 +622,7 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   conoha_servers_list_detail_response=$(ConoHaServersListDetail)
   if [ "$(echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_worker002_name_tag}"'" ) | any(.)')" != true ]; then
     conoha_server_create_response=$(
-      ConoHaServersCreate "${conoha_flavor_id}" "${conoha_image_id}" "${conoha_root_password}" "${conoha_key_name}" "${conoha_userdata_base64_encoded_k8s_worker}" "${conoha_k8s_worker002_name_tag}"
+      ConoHaServersCreate "${conoha_flavor_id}" "${conoha_image_id}" "${conoha_root_password}" "${conoha_key_name}" "${conoha_userdata_base64_encoded_k8s_worker002}" "${conoha_k8s_worker002_name_tag}"
     )
     echo "${conoha_server_create_response}" | jq -cr . 1>>"${conoha_log}"
   else
@@ -657,7 +661,7 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   conoha_k8s_worker_join_command=
   while true; do
     # shellcheck disable=SC2086
-    conoha_k8s_worker_join_command=$(ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_master001}" "grep -o 'kubeadm join .*$' /root/.userdata/output.log" || true)
+    conoha_k8s_worker_join_command=$(ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_master001}" "grep -o 'kubeadm join .*$' /root/.userdata/output.log 2>/dev/null" || true)
     [ -z "${conoha_k8s_worker_join_command}" ] || break
     sleep 10
     PrintStderr "Waiting kubeadm init on \"${conoha_k8s_master001_name_tag}\" ..."
@@ -831,6 +835,12 @@ ConohaMain() {  ## main start DO NOT REMOVE ##
         list-sumally) ConoHaImagesListSumally "$@" ;;
         *           ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
       esac ;;
+    k8s)
+      case "${sub2_command}" in
+        subcmds                     ) eval "${get_sub2_cmds}" ;;
+        create-cluster-single-master) ConoHaK8sCreateClusterSingleMaster "$@" ;;
+        *                           ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
+      esac ;;
     keypairs)
       case "${sub2_command}" in
         subcmds) eval "${get_sub2_cmds}" ;;
@@ -888,12 +898,11 @@ ConohaMain() {  ## main start DO NOT REMOVE ##
       esac ;;
     tools)
       case "${sub2_command}" in
-        subcmds                                 ) eval "${get_sub2_cmds}" ;;
-        servers-create-k8s-cluster-single-master) ConoHaToolsServersCreateK8sClusterSingleMaster "$@" ;;
-        get-image-ubuntu1804                    ) ConoHaToolsGetImageUbuntu1804 "$@" ;;
-        get-flavor-512mb                        ) ConoHaToolsGetFlavor512MB "$@" ;;
-        get-flavor-1gb                          ) ConoHaToolsGetFlavor1GB "$@" ;;
-        *                                       ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
+        subcmds             ) eval "${get_sub2_cmds}" ;;
+        get-image-ubuntu1804) ConoHaToolsGetImageUbuntu1804 "$@" ;;
+        get-flavor-512mb    ) ConoHaToolsGetFlavor512MB "$@" ;;
+        get-flavor-1gb      ) ConoHaToolsGetFlavor1GB "$@" ;;
+        *                   ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
       esac ;;
     version)
       case "${sub2_command}" in
