@@ -527,9 +527,9 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   conoha_image_id="1ae808e4-f4ee-4ee6-adfc-0ba8c2bf67f3"  ## vmi-ubuntu-18.04-amd64-20gb
   conoha_root_password=$(LANG=C LC_ALL=C tr -dc 0-9A-Za-z </dev/urandom | head -c 16 || true)
   conoha_key_name="k8s001"
-  PrintStderr "Checking https://djeeno.gitlab.io/userdata/setup-k8s-master.sh ..."
+  PrintStderr "Checking userdata script https://djeeno.gitlab.io/userdata/setup-k8s-master.sh ..."
   conoha_userdata_base64_encoded_k8s_master=$(curl -LRsS https://djeeno.gitlab.io/userdata/setup-k8s-master.sh | ConoHaBase64Encode)
-  PrintStderr "Checking https://djeeno.gitlab.io/userdata/setup-k8s-worker.sh ..."
+  PrintStderr "Checking userdata script https://djeeno.gitlab.io/userdata/setup-k8s-worker.sh ..."
   conoha_userdata_base64_encoded_k8s_worker=$(curl -LRsS https://djeeno.gitlab.io/userdata/setup-k8s-worker.sh | ConoHaBase64Encode)
   conoha_k8s_master001_name_tag="k8s001master001"
   conoha_k8s_worker001_name_tag="k8s001worker001"
@@ -560,7 +560,7 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   ##
   # キーペア作成
   ##
-  PrintStderr "Checking keypair \"${conoha_key_name}\" ..."
+  PrintStderr "Checking existence of keypair \"${conoha_key_name}\" ..."
   conoha_keypairs_list_response=$(ConoHaKeypairsList)
   if [ "$(echo "${conoha_keypairs_list_response}" | jq '.keypairs[] | select( .keypair.name == "'"${conoha_key_name}"'" ) | any(.)')" != true ]; then
     if ! grep -q ssh- "${conoha_key_file}.pub"; then
@@ -576,7 +576,7 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   ##
   # Kubernetes master001 node サーバ作成
   ##
-  PrintStderr "Checking server \"${conoha_k8s_master001_name_tag}\" ..."
+  PrintStderr "Checking existence of server \"${conoha_k8s_master001_name_tag}\" ..."
   conoha_servers_list_detail_response=$(ConoHaServersListDetail)
   if [ "$(echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_master001_name_tag}"'" ) | any(.)')" != true ]; then
     conoha_server_create_response=$(
@@ -595,7 +595,7 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   ##
   # Kubernetes worker001 node サーバ作成
   ##
-  PrintStderr "Checking server \"${conoha_k8s_worker001_name_tag}\" ..."
+  PrintStderr "Checking existence of server \"${conoha_k8s_worker001_name_tag}\" ..."
   conoha_servers_list_detail_response=$(ConoHaServersListDetail)
   if [ "$(echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_worker001_name_tag}"'" ) | any(.)')" != true ]; then
     conoha_server_create_response=$(
@@ -614,7 +614,7 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   ##
   # Kubernetes worker002 node サーバ作成
   ##
-  PrintStderr "Checking server \"${conoha_k8s_worker002_name_tag}\" ..."
+  PrintStderr "Checking existence of server \"${conoha_k8s_worker002_name_tag}\" ..."
   conoha_servers_list_detail_response=$(ConoHaServersListDetail)
   if [ "$(echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_worker002_name_tag}"'" ) | any(.)')" != true ]; then
     conoha_server_create_response=$(
