@@ -517,10 +517,10 @@ ConoHaToolsGetFlavor1GB() {
 
 ConoHaKubernetesCreateClusterSingleMaster() {
   #set -x  ## for DEBUG
+  conoha_k8s_cluster_name="${1:?"$(printf '\n%s' "Set \$1 as Kubernetes cluster name")"}"
   conoha_log=~/.conoha.log ; touch "${conoha_log}" ; chmod go-rwx "${conoha_log}"
   conoha_k8s_admin_config_file=~/.conoha.kubernetes.admin.conf ; touch "${conoha_k8s_admin_config_file}" ; chmod go-rwx "${conoha_k8s_admin_config_file}"
   conoha_k8s_known_hosts=~/.conoha.known_hosts ; touch "${conoha_k8s_known_hosts}" ; chmod go-rwx "${conoha_k8s_known_hosts}"
-  conoha_k8s_cluster_name="${1:?"$(printf '\n%s' "Set \$1 as Kubernetes cluster name")"}"
   # TODO: k8sクラスタをInternalで構築したかった
   #local#conoha_subnet_name="local-10-5-8-0-24"
   #local#conoha_subnet_cidr="10.5.8.0/24"
@@ -774,6 +774,30 @@ ConoHaKubernetesCreateClusterSingleMaster() {
   PrintStderr "  $ ssh ${SSH_OPTIONS} ${conoha_ssh_host_k8s_worker002}  ## ${conoha_k8s_worker002_name_tag}"
 }
 
+ConoHaKubernetesListClusterNodes() {
+  conoha_k8s_cluster_name="${1:?"$(printf '\n%s' "Set \$1 as Kubernetes cluster name")"}"
+  ConoHaServersListDetail | jq -r '.servers[] | select( .metadata.kubernetes_cluster_name == "'"${conoha_k8s_cluster_name}"'" ) ' | jq -s '{ servers: . }'
+}
+
+ConoHaKubernetesTerminateCluster() {
+  conoha_k8s_cluster_name="${1:?"$(printf '\n%s' "Set \$1 as Kubernetes cluster name")"}"
+  conoha_servers_k8s_cluster_nodes=$(ConoHaServersListDetail | jq -r '.servers[] | select( .metadata.kubernetes_cluster_name == "'"${conoha_k8s_cluster_name}"'" )' | jq -sr '{ servers: . }')
+  conoha_servers_name_tags=$(echo "${conoha_servers_k8s_cluster_nodes}" | jq -r '.servers[] | .metadata.instance_name_tag')
+  if [ "${conoha_servers_name_tags}" ]; then
+    PrintStderr "Terminate servers:"
+    echo "${conoha_servers_name_tags}" | while read -r LINE; do
+      PrintStderr "  * ${LINE}"
+    done
+    PrintStderr "If you want to cancel, please press Ctrl+C within 10 seconds ..."
+    sleep 10
+    echo "${conoha_servers_k8s_cluster_nodes}" | jq -r '.servers[] | .id' | while read -r LINE; do
+      ConoHaServersDelete "${LINE}"
+    done
+  else
+    PrintStderr "Kubernetes cluster \"${conoha_k8s_cluster_name}\" not found"
+  fi
+}
+
 
 
 ##
@@ -843,6 +867,8 @@ ConohaMain() {  ## main start DO NOT REMOVE ##
       case "${sub2_command}" in
         subcmds                     ) eval "${get_sub2_cmds}" ;;
         create-cluster-single-master) ConoHaKubernetesCreateClusterSingleMaster "$@" ;;
+        list-cluster-nodes          ) ConoHaKubernetesListClusterNodes "$@" ;;
+        terminate-cluster           ) ConoHaKubernetesTerminateCluster "$@" ;;
         *                           ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
       esac ;;
     keypairs)
