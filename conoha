@@ -677,8 +677,8 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   echo "${conoha_k8s_admin_config_content}" >"${conoha_k8s_admin_config_file}"
   # shellcheck disable=SC2086,SC2029
   ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_master001}" """
-    grep -q \"kubeadm completion bash\" ~/.bashrc || echo 'eval \$(kubeadm completion bash)' 1>>~/.bashrc
-    grep -q \"kubectl completion bash\" ~/.bashrc || echo 'eval \$(kubeadm completion bash)' 1>>~/.bashrc
+    grep -q \"kubeadm completion bash\" ~/.bashrc || echo \"eval \\\"\\\$(kubeadm completion bash)\\\"\" 1>>~/.bashrc
+    grep -q \"kubectl completion bash\" ~/.bashrc || echo \"eval \\\"\\\$(kubectl completion bash)\\\"\" 1>>~/.bashrc
   """ 2>>"${conoha_log}"
   ####
   #
@@ -701,13 +701,13 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   ##
   # Kubernetes worker001 node に ~/.kube/config をアップロード
   ##
-  PrintStderr "Uploading \"${conoha_k8s_admin_config_file}\" as ~/.kube/config to worker node \"${conoha_k8s_worker001_name_tag}\" in order to execute kubectl command on worker node ..."
+  PrintStderr "Uploading \"${conoha_k8s_admin_config_file}\" as \"~/.kube/config\" to worker node \"${conoha_k8s_worker001_name_tag}\" ..."
   # shellcheck disable=SC2086,SC2029
   ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_worker001}" "[ -f ~/.kube/config ] || { mkdir -p ~/.kube; echo '${conoha_k8s_admin_config_content}' >~/.kube/config; }" 2>>"${conoha_log}"
   # shellcheck disable=SC2086,SC2029
   ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_worker001}" """
-    grep -q \"kubeadm completion bash\" ~/.bashrc || echo 'eval \$(kubeadm completion bash)' 1>>~/.bashrc
-    grep -q \"kubectl completion bash\" ~/.bashrc || echo 'eval \$(kubeadm completion bash)' 1>>~/.bashrc
+    grep -q \"kubeadm completion bash\" ~/.bashrc || echo \"eval \\\"\\\$(kubeadm completion bash)\\\"\" 1>>~/.bashrc
+    grep -q \"kubectl completion bash\" ~/.bashrc || echo \"eval \\\"\\\$(kubectl completion bash)\\\"\" 1>>~/.bashrc
   """ 2>>"${conoha_log}"
   ##
   # Kubernetes worker001 node で kubeadm join コマンドを実行
@@ -736,13 +736,13 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   ##
   # Kubernetes worker002 node に ~/.kube/config をアップロード
   ##
-  PrintStderr "Uploading \"${conoha_k8s_admin_config_file}\" as ~/.kube/config to worker node \"${conoha_k8s_worker002_name_tag}\" in order to execute kubectl command on worker node ..."
+  PrintStderr "Uploading \"${conoha_k8s_admin_config_file}\" as \"~/.kube/config\" to worker node \"${conoha_k8s_worker002_name_tag}\" ..."
   # shellcheck disable=SC2086,SC2029
   ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_worker002}" "[ -f ~/.kube/config ] || { mkdir -p ~/.kube; echo '${conoha_k8s_admin_config_content}' >~/.kube/config; }" 2>>"${conoha_log}"
   # shellcheck disable=SC2086,SC2029
   ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_worker002}" """
-    grep -q \"kubeadm completion bash\" ~/.bashrc || echo 'eval \$(kubeadm completion bash)' 1>>~/.bashrc
-    grep -q \"kubectl completion bash\" ~/.bashrc || echo 'eval \$(kubeadm completion bash)' 1>>~/.bashrc
+    grep -q \"kubeadm completion bash\" ~/.bashrc || echo \"eval \\\"\\\$(kubeadm completion bash)\\\"\" 1>>~/.bashrc
+    grep -q \"kubectl completion bash\" ~/.bashrc || echo \"eval \\\"\\\$(kubectl completion bash)\\\"\" 1>>~/.bashrc
   """ 2>>"${conoha_log}"
   ##
   # Kubernetes worker002 node で kubeadm join コマンドを実行
