@@ -23,7 +23,7 @@ CONOHA_PROGRAM_NAME="$(basename -- "$0")"
 # common
 ##
 PrintStderr() {
-  echo "$*" 1>&2
+  echo "$*" | sed "s|$HOME|\$HOME|g" 1>&2
 }
 
 CheckDependency() {
@@ -563,6 +563,7 @@ ConoHaKubernetesCreateClusterSingleMaster() {
   #local#  conoha_subnet_id=$(echo "${conoha_api_response}" | jq -r '.subnets[] | select( .name == "'"${conoha_subnet_name}"'" ) | .id')
   #local#  ConoHaPortsCreate "${conoha_network_id}" "${conoha_subnet_id}" "${conoha_master001_ipaddress}"
   #fi
+  PrintStderr "Setup Kubernetes cluster \"${conoha_k8s_cluster_name}\""
   ##
   # キーペア作成
   ##
@@ -574,6 +575,7 @@ ConoHaKubernetesCreateClusterSingleMaster() {
       PrintStderr "  $ echo | ssh-keygen -t rsa -N '' -f \"${conoha_key_file}\""
       exit 1
     fi
+    PrintStderr "Create keypair \"${conoha_key_name}\""
     ConoHaKeypairsUpload "${conoha_key_name}" "$(cat ~/.ssh/id_rsa.pub)"
   else
     # すでに存在する鍵を利用
@@ -585,6 +587,7 @@ ConoHaKubernetesCreateClusterSingleMaster() {
   PrintStderr "Checking existence of server \"${conoha_k8s_master001_name_tag}\" ..."
   conoha_servers_list_detail_response=$(ConoHaServersListDetail)
   if [ "$(echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_master001_name_tag}"'" ) | any(.)')" != true ]; then
+    PrintStderr "Create server \"${conoha_k8s_master001_name_tag}\""
     conoha_server_create_response=$(
       # shellcheck disable=SC2030,SC2031
       export CONOHA_SERVERS_CREATE_METADATA=',"kubernetes_cluster_name":"'"${conoha_k8s_cluster_name}"'","kubernetes_cluster_role":"master"'
@@ -606,6 +609,7 @@ ConoHaKubernetesCreateClusterSingleMaster() {
   PrintStderr "Checking existence of server \"${conoha_k8s_worker001_name_tag}\" ..."
   conoha_servers_list_detail_response=$(ConoHaServersListDetail)
   if [ "$(echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_worker001_name_tag}"'" ) | any(.)')" != true ]; then
+    PrintStderr "Create server \"${conoha_k8s_worker001_name_tag}\""
     conoha_server_create_response=$(
       # shellcheck disable=SC2030,SC2031
       export CONOHA_SERVERS_CREATE_METADATA=',"kubernetes_cluster_name":"'"${conoha_k8s_cluster_name}"'","kubernetes_cluster_role":"worker"'
@@ -627,6 +631,7 @@ ConoHaKubernetesCreateClusterSingleMaster() {
   PrintStderr "Checking existence of server \"${conoha_k8s_worker002_name_tag}\" ..."
   conoha_servers_list_detail_response=$(ConoHaServersListDetail)
   if [ "$(echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_worker002_name_tag}"'" ) | any(.)')" != true ]; then
+    PrintStderr "Create server \"${conoha_k8s_worker002_name_tag}\""
     conoha_server_create_response=$(
       # shellcheck disable=SC2030,SC2031
       export CONOHA_SERVERS_CREATE_METADATA=',"kubernetes_cluster_name":"'"${conoha_k8s_cluster_name}"'","kubernetes_cluster_role":"worker"'
@@ -651,7 +656,9 @@ ConoHaKubernetesCreateClusterSingleMaster() {
   # Kubernetes master001 node に sshできるようになるまで待つ
   ##
   PrintStderr "Checking to connect to server \"${conoha_k8s_master001_name_tag}\" ..."
-  alias sshCmd='ssh -n -o IdentityFile=${conoha_key_file} -o StrictHostKeyChecking=no -o UserKnownHostsFile=${conoha_k8s_known_hosts} -o User=${SSH_USER:="root"}'
+  SSH_OPTIONS="-o IdentityFile=${conoha_key_file} -o StrictHostKeyChecking=no -o UserKnownHostsFile=${conoha_k8s_known_hosts} -o User=${SSH_USER:="root"}"
+  # shellcheck disable=SC2086
+  sshCmd() { ssh -n ${SSH_OPTIONS} "$@"; }
   conoha_ssh_host_k8s_master001=
   while true; do
     conoha_ssh_host_k8s_master001=$(
@@ -718,7 +725,7 @@ ConoHaKubernetesCreateClusterSingleMaster() {
   ##
   # Kubernetes worker001 node で kubeadm join コマンドを実行
   ##
-  PrintStderr "Joining the cluster if worker node \"${conoha_k8s_worker001_name_tag}\" does not participate in kubernetes cluster ..."
+  PrintStderr "Join the cluster if worker node \"${conoha_k8s_worker001_name_tag}\" does not participate in kubernetes cluster"
   sshCmd "${conoha_ssh_host_k8s_worker001}" "kubectl get nodes | grep -q \"^\$(hostname --short | cut -b1-16)\" || ${conoha_k8s_worker_join_command}"
   ####
   #
@@ -750,7 +757,7 @@ ConoHaKubernetesCreateClusterSingleMaster() {
   ##
   # Kubernetes worker002 node で kubeadm join コマンドを実行
   ##
-  PrintStderr "Joining the cluster if worker node \"${conoha_k8s_worker002_name_tag}\" does not participate in kubernetes cluster ..."
+  PrintStderr "Join the cluster if worker node \"${conoha_k8s_worker002_name_tag}\" does not participate in kubernetes cluster"
   sshCmd "${conoha_ssh_host_k8s_worker002}" "kubectl get nodes | grep -q \"^\$(hostname --short | cut -b1-16)\" || ${conoha_k8s_worker_join_command}"
   ##
   # Kubernetes master kubectl get nodes の結果を出力
