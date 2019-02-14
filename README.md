@@ -21,7 +21,7 @@ $ sudo mv /tmp/conoha /usr/local/bin/conoha
 $ . "$(conoha completion)"
 
 $ conoha  # <tab>
-configure       flavors         images          keypairs        networks        ports           securitygroups  servers         subnets         tools           version
+configure       flavors         images          keypairs        kubernetes      networks        ports           securitygroups  servers         subnets         tools           version
 ```
 
 ### Set Credentials
