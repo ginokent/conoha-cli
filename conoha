@@ -567,7 +567,7 @@ ConoHaK8sCreateClusterSingleMaster() {
   PrintStderr "Checking existence of keypair \"${conoha_key_name}\" ..."
   conoha_keypairs_list_response=$(ConoHaKeypairsList)
   if [ "$(echo "${conoha_keypairs_list_response}" | jq '.keypairs[] | select( .keypair.name == "'"${conoha_key_name}"'" ) | any(.)')" != true ]; then
-    if ! grep -q ssh- "${conoha_key_file}.pub"; then
+    if ! grep -q ssh- "${conoha_key_file}.pub" 2>/dev/null; then
       PrintStderr "You need ${conoha_key_file}.pub"
       PrintStderr "  $ echo | ssh-keygen -t rsa -N '' -f \"${conoha_key_file}\""
       exit 1
