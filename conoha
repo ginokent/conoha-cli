@@ -88,7 +88,7 @@ ConoHaSetCredentials() {
   fi
   conoha_api_endpoint="https://identity.tyo1.conoha.io/v2.0/tokens"
   CONOHA_TOKEN=$(
-    curl -sS -X POST "${conoha_api_endpoint}" \
+    curl -fsS -X POST "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
       -d '{"auth":{"passwordCredentials":{"username":"'"${CONOHA_API_ACCOUNT_USERNAME}"'","password":"'"${CONOHA_API_ACCOUNT_PASSWORD}"'"},"tenantId":"'"${CONOHA_TENANT_ID}"'"}}' \
       | jq -r '.access.token.id'
@@ -138,7 +138,7 @@ ConoHaFlavorsList() {
   ConoHaSetCredentials
   conoha_api_response=$(
     conoha_api_endpoint="https://compute.tyo1.conoha.io/v2/${CONOHA_TENANT_ID}/flavors"
-    curl -sS -X GET "${conoha_api_endpoint}" \
+    curl -fsS -X GET "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
   )
@@ -161,7 +161,7 @@ ConoHaImagesList() {
   ConoHaSetCredentials
   conoha_api_response=$(
     conoha_api_endpoint="https://compute.tyo1.conoha.io/v2/${CONOHA_TENANT_ID}/images"
-    curl -sS -X GET "${conoha_api_endpoint}" \
+    curl -fsS -X GET "${conoha_api_endpoint}" \
       -H "Accept: application/json" \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
   )
@@ -184,7 +184,7 @@ ConoHaKeypairsList() {
   ConoHaSetCredentials
   conoha_api_response=$(
     conoha_api_endpoint="https://compute.tyo1.conoha.io/v2/${CONOHA_TENANT_ID}/os-keypairs"
-    curl -sS -X GET "${conoha_api_endpoint}" \
+    curl -fsS -X GET "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
   )
@@ -198,7 +198,7 @@ ConoHaKeypairsUpload() {
   ConoHaSetCredentials
   conoha_api_response=$(
     conoha_api_endpoint="https://compute.tyo1.conoha.io/v2/${CONOHA_TENANT_ID}/os-keypairs"
-    curl -sS -X POST "${conoha_api_endpoint}" \
+    curl -fsS -X POST "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
       -d '{"keypair": {"name": "'"${conoha_key_name}"'","public_key": "'"${conoha_public_key}"'"}}' \
@@ -216,7 +216,7 @@ ConoHaNetworksCreateLocalNetwork() {
   ConoHaSetCredentials
   conoha_api_response=$(
     conoha_api_endpoint="https://networking.tyo1.conoha.io/v2.0/networks"
-    curl -sS -X POST "${conoha_api_endpoint}" \
+    curl -fsS -X POST "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
   )
@@ -229,7 +229,7 @@ ConoHaNetworksDelete() {
   ConoHaSetCredentials
   conoha_api_response=$(
     conoha_api_endpoint="https://networking.tyo1.conoha.io/v2.0/networks/${conoha_network_id}"
-    curl -sS -X DELETE "${conoha_api_endpoint}" \
+    curl -fsS -X DELETE "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
   )
@@ -241,7 +241,7 @@ ConoHaNetworksListLocalNetworks() {
   ConoHaSetCredentials
   conoha_api_response=$(
     conoha_api_endpoint="https://networking.tyo1.conoha.io/v2.0/networks"
-    curl -sS -X GET "${conoha_api_endpoint}" \
+    curl -fsS -X GET "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
   )
@@ -258,7 +258,7 @@ ConoHaPortsList() {
   ConoHaSetCredentials
   conoha_api_response=$(
     conoha_api_endpoint="https://networking.tyo1.conoha.io/v2.0/ports"
-    curl -sS -X GET "${conoha_api_endpoint}" \
+    curl -fsS -X GET "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
   )
@@ -278,7 +278,7 @@ ConoHaPortsCreate() {
   conoha_api_response=$(
     conoha_default_security_groups="$(ConoHaSecurityGroupsList | jq '.security_groups[] | select( (.name == "gncs-ipv4-all") or (.name == "default") ) | .id' | jq -cs .)"
     conoha_api_endpoint="https://networking.tyo1.conoha.io/v2.0/ports"
-    curl -sS -X POST "${conoha_api_endpoint}" \
+    curl -fsS -X POST "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
       -d'{"port":{"network_id":"'"${conoha_network_id}"'","fixed_ips":[{"ip_address":"'"${conoha_ipaddress}"'","subnet_id":"'"${conoha_subnet_id}"'"}],"security_groups":'"${conoha_default_security_groups}"'}}' \
@@ -291,7 +291,7 @@ ConoHaPortsDelete() {
   ConoHaSetCredentials
   conoha_api_response=$(
     conoha_api_endpoint="https://networking.tyo1.conoha.io/v2.0/${conoha_port_id}"
-    curl -sS -X DELETE "${conoha_api_endpoint}" \
+    curl -fsS -X DELETE "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
   )
@@ -308,7 +308,7 @@ ConoHaSecurityGroupsList() {
   ConoHaSetCredentials
   conoha_api_response=$(
     conoha_api_endpoint="https://networking.tyo1.conoha.io/v2.0/security-groups"
-    curl -sS -X GET "${conoha_api_endpoint}" \
+    curl -fsS -X GET "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
   )
@@ -331,7 +331,7 @@ ConoHaServersAttachPort() {
   ConoHaSetCredentials
   conoha_api_endpoint="https://compute.tyo1.conoha.io/v2/${CONOHA_TENANT_ID}/servers/${conoha_server_id}/os-interface"
   conoha_api_response=$(
-    curl -sS -X POST "${conoha_api_endpoint}" \
+    curl -fsS -X POST "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
       -d '{"interfaceAttachment":{"port_id":"'"${conoha_port_id}"'"}}' \
@@ -350,7 +350,7 @@ ConoHaServersCreate() {
   ConoHaSetCredentials
   conoha_api_response=$(
     conoha_api_endpoint="https://compute.tyo1.conoha.io/v2/${CONOHA_TENANT_ID}/servers"
-    curl -sS -X POST "${conoha_api_endpoint}" \
+    curl -fsS -X POST "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
       -d '{"server":{"flavorRef":"'"${conoha_flavor_id}"'","imageRef":"'"${conoha_image_id}"'","adminPass":"'"${conoha_root_password}"'","key_name":"'"${conoha_key_name}"'","security_groups":[{"name":"default"},{"name":"gncs-ipv4-all"}],"user_data":"'"${conoha_userdata_base64_encoded}"'","metadata":{"instance_name_tag":"'"${conoha_name_tag}"'"}}}' \
@@ -364,7 +364,7 @@ ConoHaServersDelete() {
   ConoHaSetCredentials
   conoha_api_response=$(
     conoha_api_endpoint="https://compute.tyo1.conoha.io/v2/${CONOHA_TENANT_ID}/servers/${conoha_server_id}"
-    curl -sS -X DELETE "${conoha_api_endpoint}" \
+    curl -fsS -X DELETE "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
   )
@@ -376,7 +376,7 @@ ConoHaServersList() {
   ConoHaSetCredentials
   conoha_api_response=$(
     conoha_api_endpoint="https://compute.tyo1.conoha.io/v2/${CONOHA_TENANT_ID}/servers"
-    curl -sS -X GET "${conoha_api_endpoint}" \
+    curl -fsS -X GET "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
   )
@@ -388,7 +388,7 @@ ConoHaServersListDetail() {
   ConoHaSetCredentials
   conoha_api_response=$(
     conoha_api_endpoint="https://compute.tyo1.conoha.io/v2/${CONOHA_TENANT_ID}/servers/detail"
-    curl -sS -X GET "${conoha_api_endpoint}" \
+    curl -fsS -X GET "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
   )
@@ -406,7 +406,7 @@ ConoHaServersListAttachedPorts() {
   ConoHaSetCredentials
   conoha_api_response=$(
     conoha_api_endpoint="https://compute.tyo1.conoha.io/v2/${CONOHA_TENANT_ID}/servers/${conoha_server_id}/os-interface"
-    curl -sS -X GET "${conoha_api_endpoint}" \
+    curl -fsS -X GET "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
   )
@@ -418,7 +418,7 @@ ConoHaServersStart() {
   ConoHaSetCredentials
   conoha_api_response=$(
     conoha_api_endpoint="https://compute.tyo1.conoha.io/v2/${CONOHA_TENANT_ID}/servers/${conoha_server_id}/action"
-    curl -sS -X POST "${conoha_api_endpoint}" \
+    curl -fsS -X POST "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
       -d '{"os-start":null}' \
@@ -431,7 +431,7 @@ ConoHaServersStop() {
   ConoHaSetCredentials
   conoha_api_response=$(
     conoha_api_endpoint="https://compute.tyo1.conoha.io/v2/${CONOHA_TENANT_ID}/servers/${conoha_server_id}/action"
-    curl -sS -X POST "${conoha_api_endpoint}" \
+    curl -fsS -X POST "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
       -d '{"os-stop":null}' \
@@ -451,7 +451,7 @@ ConoHaSubnetsCreateLocalSubnet() {
   ConoHaSetCredentials
   conoha_api_response=$(
     conoha_api_endpoint="https://networking.tyo1.conoha.io/v2.0/subnets"
-    curl -sS -X POST "${conoha_api_endpoint}" \
+    curl -fsS -X POST "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
       -d '{"subnet": {"network_id": "'"${conoha_subnet_network_id}"'", "cidr": "'"${conoha_subnet_cidr}"'"}}' \
@@ -465,7 +465,7 @@ ConoHaSubnetsDelete() {
   ConoHaSetCredentials
   conoha_api_response=$(
     conoha_api_endpoint="https://networking.tyo1.conoha.io/v2.0/subnets/${conoha_subnet_id}"
-    curl -sS -X DELETE "${conoha_api_endpoint}" \
+    curl -fsS -X DELETE "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
   )
@@ -477,7 +477,7 @@ ConoHaSubnetsList() {
   ConoHaSetCredentials
   conoha_api_response=$(
     conoha_api_endpoint="https://networking.tyo1.conoha.io/v2.0/subnets"
-    curl -sS -X GET "${conoha_api_endpoint}" \
+    curl -fsS -X GET "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
   )
@@ -533,6 +533,7 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   conoha_userdata_base64_encoded_k8s_worker=$(curl -LRsS https://djeeno.gitlab.io/userdata/setup-k8s-worker.sh | ConoHaBase64Encode)
   conoha_k8s_master001_name_tag="k8s001master001"
   conoha_k8s_worker001_name_tag="k8s001worker001"
+  conoha_k8s_worker002_name_tag="k8s001worker002"
   #local###
   #local## サブネット作成
   #local###
@@ -578,7 +579,9 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   PrintStderr "Checking server \"${conoha_k8s_master001_name_tag}\" ..."
   conoha_servers_list_detail_response=$(ConoHaServersListDetail)
   if [ "$(echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_master001_name_tag}"'" ) | any(.)')" != true ]; then
-    conoha_server_create_response=$(ConoHaServersCreate "${conoha_flavor_id}" "${conoha_image_id}" "${conoha_root_password}" "${conoha_key_name}" "${conoha_userdata_base64_encoded_k8s_master}" "${conoha_k8s_master001_name_tag}")
+    conoha_server_create_response=$(
+      ConoHaServersCreate "${conoha_flavor_id}" "${conoha_image_id}" "${conoha_root_password}" "${conoha_key_name}" "${conoha_userdata_base64_encoded_k8s_master}" "${conoha_k8s_master001_name_tag}"
+    )
     echo "${conoha_server_create_response}" | jq -cr . 1>>"${conoha_log}"
   else
     conoha_k8s_master001_status=$(echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_master001_name_tag}"'" ) | .status')
@@ -595,7 +598,9 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   PrintStderr "Checking server \"${conoha_k8s_worker001_name_tag}\" ..."
   conoha_servers_list_detail_response=$(ConoHaServersListDetail)
   if [ "$(echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_worker001_name_tag}"'" ) | any(.)')" != true ]; then
-    conoha_server_create_response=$(ConoHaServersCreate "${conoha_flavor_id}" "${conoha_image_id}" "${conoha_root_password}" "${conoha_key_name}" "${conoha_userdata_base64_encoded_k8s_worker}" "${conoha_k8s_worker001_name_tag}")
+    conoha_server_create_response=$(
+      ConoHaServersCreate "${conoha_flavor_id}" "${conoha_image_id}" "${conoha_root_password}" "${conoha_key_name}" "${conoha_userdata_base64_encoded_k8s_worker}" "${conoha_k8s_worker001_name_tag}"
+    )
     echo "${conoha_server_create_response}" | jq -cr . 1>>"${conoha_log}"
   else
     conoha_k8s_worker001_status=$(echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_worker001_name_tag}"'" ) | .status')
@@ -606,6 +611,30 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
       exit 0
     fi
   fi
+  ##
+  # Kubernetes worker002 node サーバ作成
+  ##
+  PrintStderr "Checking server \"${conoha_k8s_worker002_name_tag}\" ..."
+  conoha_servers_list_detail_response=$(ConoHaServersListDetail)
+  if [ "$(echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_worker002_name_tag}"'" ) | any(.)')" != true ]; then
+    conoha_server_create_response=$(
+      ConoHaServersCreate "${conoha_flavor_id}" "${conoha_image_id}" "${conoha_root_password}" "${conoha_key_name}" "${conoha_userdata_base64_encoded_k8s_worker}" "${conoha_k8s_worker002_name_tag}"
+    )
+    echo "${conoha_server_create_response}" | jq -cr . 1>>"${conoha_log}"
+  else
+    conoha_k8s_worker002_status=$(echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_worker002_name_tag}"'" ) | .status')
+    if [ "${conoha_k8s_worker002_status}" != "ACTIVE" ] && [ "${conoha_k8s_worker002_status}" != "BUILD" ]; then
+      PrintStderr "Server \"${conoha_k8s_worker002_name_tag}\" already exists, but status is \"${conoha_k8s_worker002_status}\""
+      PrintStderr "See:"
+      PrintStderr "  $ conoha servers list-detail | jq '.servers[] | select( .metadata.instance_name_tag == \"${conoha_k8s_worker002_name_tag}\" )'"
+      exit 0
+    fi
+  fi
+  ####
+  #
+  # Kubernetes master001
+  #
+  ####
   ##
   # Kubernetes master001 node に sshできるようになるまで待つ
   ##
@@ -646,6 +675,11 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
     PrintStderr "Waiting to generate /etc/kubernetes/admin.conf on \"${conoha_k8s_master001_name_tag}\" ..."
   done
   echo "${conoha_k8s_admin_config_content}" >"${conoha_k8s_admin_config_file}"
+  ####
+  #
+  # Kubernetes worker001
+  #
+  ####
   ##
   # Kubernetes worker001 node に sshできるようになるまで待つ
   ##
@@ -660,13 +694,47 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
     PrintStderr "Waiting to ssh to \"${conoha_k8s_worker001_name_tag}\" ..."
   done
   ##
-  PrintStderr "Uploading ~/.kube/config to worker node in order to execute kubectl command on worker node ..."
+  # Kubernetes worker001 node に ~/.kube/config をアップロード
+  ##
+  PrintStderr "Uploading ~/.kube/config to worker node \"${conoha_k8s_worker001_name_tag}\" in order to execute kubectl command on worker node ..."
   # shellcheck disable=SC2086,SC2029
   ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_worker001}" "[ -f ~/.kube/config ] || { mkdir -p ~/.kube; echo '${conoha_k8s_admin_config_content}' >~/.kube/config; }" 2>>"${conoha_log}"
   ##
-  PrintStderr "Joining the cluster if worker node does not participate in kubernetes cluster ..."
+  # Kubernetes worker001 node で kubeadm join コマンドを実行
+  ##
+  PrintStderr "Joining the cluster if worker node \"${conoha_k8s_worker001_name_tag}\" does not participate in kubernetes cluster ..."
   # shellcheck disable=SC2086,SC2029
   ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_worker001}" "kubectl get nodes | tee /dev/stderr | grep -q \"^\$(hostname --short | cut -b1-16)\" || ${conoha_k8s_worker_join_command}" 2>>"${conoha_log}"
+  ####
+  #
+  # Kubernetes worker002
+  #
+  ####
+  ##
+  # Kubernetes worker002 node に sshできるようになるまで待つ
+  ##
+  PrintStderr "Checking to connect to server \"${conoha_k8s_worker002_name_tag}\" ..."
+  conoha_ssh_host_k8s_worker002=
+  while true; do
+    conoha_ssh_host_k8s_worker002=$(
+      ConoHaServersListDetail | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_worker002_name_tag}"'" ) | .addresses | .[] | .[] | select( .version == 4 )   | .addr'
+    )
+    [ -z "${conoha_ssh_host_k8s_worker002}" ] || break
+    sleep 10
+    PrintStderr "Waiting to ssh to \"${conoha_k8s_worker002_name_tag}\" ..."
+  done
+  ##
+  # Kubernetes worker002 node に ~/.kube/config をアップロード
+  ##
+  PrintStderr "Uploading ~/.kube/config to worker node \"${conoha_k8s_worker002_name_tag}\" in order to execute kubectl command on worker node ..."
+  # shellcheck disable=SC2086,SC2029
+  ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_worker002}" "[ -f ~/.kube/config ] || { mkdir -p ~/.kube; echo '${conoha_k8s_admin_config_content}' >~/.kube/config; }" 2>>"${conoha_log}"
+  ##
+  # Kubernetes worker002 node で kubeadm join コマンドを実行
+  ##
+  PrintStderr "Joining the cluster if worker node \"${conoha_k8s_worker002_name_tag}\" does not participate in kubernetes cluster ..."
+  # shellcheck disable=SC2086,SC2029
+  ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_worker002}" "kubectl get nodes | tee /dev/stderr | grep -q \"^\$(hostname --short | cut -b1-16)\" || ${conoha_k8s_worker_join_command}" 2>>"${conoha_log}"
   ##
   # for access
   ##
@@ -674,6 +742,8 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   PrintStderr "  $ ssh ${SSH_OPTIONS} ${conoha_ssh_host_k8s_master001}  ## ${conoha_k8s_master001_name_tag}"
   PrintStderr "If connecting to worker node \"${conoha_k8s_worker001_name_tag}\", do the following:"
   PrintStderr "  $ ssh ${SSH_OPTIONS} ${conoha_ssh_host_k8s_worker001}  ## ${conoha_k8s_worker001_name_tag}"
+  PrintStderr "If connecting to worker node \"${conoha_k8s_worker002_name_tag}\", do the following:"
+  PrintStderr "  $ ssh ${SSH_OPTIONS} ${conoha_ssh_host_k8s_worker002}  ## ${conoha_k8s_worker002_name_tag}"
 }
 
 
