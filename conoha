@@ -590,7 +590,7 @@ ConoHaKubernetesCreateClusterSingleMaster() {
     PrintStderr "Create server \"${conoha_k8s_master001_name_tag}\""
     conoha_server_create_response=$(
       # shellcheck disable=SC2030,SC2031
-      export CONOHA_SERVERS_CREATE_METADATA=',"kubernetes_cluster_name":"'"${conoha_k8s_cluster_name}"'","kubernetes_cluster_role":"master"'
+      export CONOHA_SERVERS_CREATE_METADATA=',"kubernetes_cluster_name":"'"${conoha_k8s_cluster_name}"'","kubernetes_cluster_role":"master","kubernetes_cluster_type":"single_master"'
       ConoHaServersCreate "${conoha_flavor_id}" "${conoha_image_id}" "${conoha_root_password}" "${conoha_key_name}" "${conoha_userdata_base64_encoded_k8s_master001}" "${conoha_k8s_master001_name_tag}"
     )
     echo "${conoha_server_create_response}" | jq -cr . 1>>"${conoha_log}"
@@ -612,7 +612,7 @@ ConoHaKubernetesCreateClusterSingleMaster() {
     PrintStderr "Create server \"${conoha_k8s_worker001_name_tag}\""
     conoha_server_create_response=$(
       # shellcheck disable=SC2030,SC2031
-      export CONOHA_SERVERS_CREATE_METADATA=',"kubernetes_cluster_name":"'"${conoha_k8s_cluster_name}"'","kubernetes_cluster_role":"worker"'
+      export CONOHA_SERVERS_CREATE_METADATA=',"kubernetes_cluster_name":"'"${conoha_k8s_cluster_name}"'","kubernetes_cluster_role":"worker","kubernetes_cluster_type":"single_master"'
       ConoHaServersCreate "${conoha_flavor_id}" "${conoha_image_id}" "${conoha_root_password}" "${conoha_key_name}" "${conoha_userdata_base64_encoded_k8s_worker001}" "${conoha_k8s_worker001_name_tag}"
     )
     echo "${conoha_server_create_response}" | jq -cr . 1>>"${conoha_log}"
@@ -634,7 +634,7 @@ ConoHaKubernetesCreateClusterSingleMaster() {
     PrintStderr "Create server \"${conoha_k8s_worker002_name_tag}\""
     conoha_server_create_response=$(
       # shellcheck disable=SC2030,SC2031
-      export CONOHA_SERVERS_CREATE_METADATA=',"kubernetes_cluster_name":"'"${conoha_k8s_cluster_name}"'","kubernetes_cluster_role":"worker"'
+      export CONOHA_SERVERS_CREATE_METADATA=',"kubernetes_cluster_name":"'"${conoha_k8s_cluster_name}"'","kubernetes_cluster_role":"worker","kubernetes_cluster_type":"single_master"'
       ConoHaServersCreate "${conoha_flavor_id}" "${conoha_image_id}" "${conoha_root_password}" "${conoha_key_name}" "${conoha_userdata_base64_encoded_k8s_worker002}" "${conoha_k8s_worker002_name_tag}"
     )
     echo "${conoha_server_create_response}" | jq -cr . 1>>"${conoha_log}"
