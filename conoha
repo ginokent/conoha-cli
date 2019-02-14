@@ -657,7 +657,7 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   conoha_k8s_worker_join_command=
   while true; do
     # shellcheck disable=SC2086
-    conoha_k8s_worker_join_command=$(ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_master001}" "grep -o 'kubeadm join .*$' /root/.userdata/output.log" 2>>"${conoha_log}" || true)
+    conoha_k8s_worker_join_command=$(ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_master001}" "grep -o 'kubeadm join .*$' /root/.userdata/output.log" || true)
     [ -z "${conoha_k8s_worker_join_command}" ] || break
     sleep 10
     PrintStderr "Waiting kubeadm init on \"${conoha_k8s_master001_name_tag}\" ..."
@@ -669,7 +669,7 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   conoha_k8s_admin_config_content=
   while true; do
     # shellcheck disable=SC2086
-    conoha_k8s_admin_config_content=$(ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_master001}" "cat /etc/kubernetes/admin.conf" 2>>"${conoha_log}" || true)
+    conoha_k8s_admin_config_content=$(ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_master001}" "cat /etc/kubernetes/admin.conf" || true)
     [ -z "${conoha_k8s_admin_config_content}" ] || break
     sleep 10
     PrintStderr "Waiting to generate \"/etc/kubernetes/admin.conf\" on \"${conoha_k8s_master001_name_tag}\" ..."
@@ -679,7 +679,7 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_master001}" """
     grep -q \"kubeadm completion bash\" ~/.bashrc || echo \"eval \\\"\\\$(kubeadm completion bash)\\\"\" 1>>~/.bashrc
     grep -q \"kubectl completion bash\" ~/.bashrc || echo \"eval \\\"\\\$(kubectl completion bash)\\\"\" 1>>~/.bashrc
-  """ 2>>"${conoha_log}"
+  """
   ####
   #
   # Kubernetes worker001
@@ -703,18 +703,18 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   ##
   PrintStderr "Uploading \"${conoha_k8s_admin_config_file}\" as \"~/.kube/config\" to worker node \"${conoha_k8s_worker001_name_tag}\" ..."
   # shellcheck disable=SC2086,SC2029
-  ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_worker001}" "[ -f ~/.kube/config ] || { mkdir -p ~/.kube; echo '${conoha_k8s_admin_config_content}' >~/.kube/config; }" 2>>"${conoha_log}"
+  ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_worker001}" "[ -f ~/.kube/config ] || { mkdir -p ~/.kube; echo '${conoha_k8s_admin_config_content}' >~/.kube/config; }"
   # shellcheck disable=SC2086,SC2029
   ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_worker001}" """
     grep -q \"kubeadm completion bash\" ~/.bashrc || echo \"eval \\\"\\\$(kubeadm completion bash)\\\"\" 1>>~/.bashrc
     grep -q \"kubectl completion bash\" ~/.bashrc || echo \"eval \\\"\\\$(kubectl completion bash)\\\"\" 1>>~/.bashrc
-  """ 2>>"${conoha_log}"
+  """
   ##
   # Kubernetes worker001 node で kubeadm join コマンドを実行
   ##
   PrintStderr "Joining the cluster if worker node \"${conoha_k8s_worker001_name_tag}\" does not participate in kubernetes cluster ..."
   # shellcheck disable=SC2086,SC2029
-  ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_worker001}" "kubectl get nodes | tee /dev/stderr | grep -q \"^\$(hostname --short | cut -b1-16)\" || ${conoha_k8s_worker_join_command}" 2>>"${conoha_log}"
+  ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_worker001}" "kubectl get nodes | grep -q \"^\$(hostname --short | cut -b1-16)\" || ${conoha_k8s_worker_join_command}"
   ####
   #
   # Kubernetes worker002
@@ -738,18 +738,23 @@ ConoHaToolsServersCreateK8sClusterSingleMaster() {
   ##
   PrintStderr "Uploading \"${conoha_k8s_admin_config_file}\" as \"~/.kube/config\" to worker node \"${conoha_k8s_worker002_name_tag}\" ..."
   # shellcheck disable=SC2086,SC2029
-  ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_worker002}" "[ -f ~/.kube/config ] || { mkdir -p ~/.kube; echo '${conoha_k8s_admin_config_content}' >~/.kube/config; }" 2>>"${conoha_log}"
+  ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_worker002}" "[ -f ~/.kube/config ] || { mkdir -p ~/.kube; echo '${conoha_k8s_admin_config_content}' >~/.kube/config; }"
   # shellcheck disable=SC2086,SC2029
   ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_worker002}" """
     grep -q \"kubeadm completion bash\" ~/.bashrc || echo \"eval \\\"\\\$(kubeadm completion bash)\\\"\" 1>>~/.bashrc
     grep -q \"kubectl completion bash\" ~/.bashrc || echo \"eval \\\"\\\$(kubectl completion bash)\\\"\" 1>>~/.bashrc
-  """ 2>>"${conoha_log}"
+  """
   ##
   # Kubernetes worker002 node で kubeadm join コマンドを実行
   ##
   PrintStderr "Joining the cluster if worker node \"${conoha_k8s_worker002_name_tag}\" does not participate in kubernetes cluster ..."
   # shellcheck disable=SC2086,SC2029
-  ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_worker002}" "kubectl get nodes | tee /dev/stderr | grep -q \"^\$(hostname --short | cut -b1-16)\" || ${conoha_k8s_worker_join_command}" 2>>"${conoha_log}"
+  ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_worker002}" "kubectl get nodes | grep -q \"^\$(hostname --short | cut -b1-16)\" || ${conoha_k8s_worker_join_command}"
+  ##
+  # Kubernetes master kubectl get nodes の結果を出力
+  ##
+  # shellcheck disable=SC2086,SC2029
+  ssh -n ${SSH_OPTIONS} "${conoha_ssh_host_k8s_master001}" "kubectl get nodes"
   ##
   # for access
   ##
