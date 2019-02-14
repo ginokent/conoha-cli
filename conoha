@@ -347,13 +347,14 @@ ConoHaServersCreate() {
   conoha_key_name="${4:?"$(printf '\n%s\n%s\n%s' "Set \$4 as VM OS Keypair Name (e.g. \"foobar\")" "See:" "  $ conoha keypairs list")"}"
   conoha_userdata_base64_encoded="${5:?"$(printf '\n%s\n%s\n%s' "Set \$5 as base64-encoded userdata (e.g. \"IyEvYmluL2Jhc2gK...\")" "If you want to encode base64, run:" "  $ cat \"\${YOUR_USER_DATA_FILE:?}\" | openssl base64")"}"
   conoha_name_tag="${6:?"$(printf '\n%s' "Set \$6 as VM Name Tag (e.g. \"bastion\")")"}"
+  # CONOHA_SERVERS_CREATE_METADATA は環境変数経由で渡す用
   ConoHaSetCredentials
   conoha_api_response=$(
     conoha_api_endpoint="https://compute.tyo1.conoha.io/v2/${CONOHA_TENANT_ID}/servers"
     curl -fsS -X POST "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
-      -d '{"server":{"flavorRef":"'"${conoha_flavor_id}"'","imageRef":"'"${conoha_image_id}"'","adminPass":"'"${conoha_root_password}"'","key_name":"'"${conoha_key_name}"'","security_groups":[{"name":"default"},{"name":"gncs-ipv4-all"}],"user_data":"'"${conoha_userdata_base64_encoded}"'","metadata":{"instance_name_tag":"'"${conoha_name_tag}"'"}}}' \
+      -d '{"server":{"flavorRef":"'"${conoha_flavor_id}"'","imageRef":"'"${conoha_image_id}"'","adminPass":"'"${conoha_root_password}"'","key_name":"'"${conoha_key_name}"'","security_groups":[{"name":"default"},{"name":"gncs-ipv4-all"}],"user_data":"'"${conoha_userdata_base64_encoded}"'","metadata":{"instance_name_tag":"'"${conoha_name_tag}"'",'"${CONOHA_SERVERS_CREATE_METADATA}"'}}}' \
   )
   echo "${conoha_api_response}" | jq .
 }
@@ -584,6 +585,8 @@ ConoHaK8sCreateClusterSingleMaster() {
   conoha_servers_list_detail_response=$(ConoHaServersListDetail)
   if [ "$(echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_master001_name_tag}"'" ) | any(.)')" != true ]; then
     conoha_server_create_response=$(
+      # shellcheck disable=SC2030,SC2031
+      export CONOHA_SERVERS_CREATE_METADATA='"kubernetes_cluster_name":"'"${conoha_k8s_cluster_name}"'"'
       ConoHaServersCreate "${conoha_flavor_id}" "${conoha_image_id}" "${conoha_root_password}" "${conoha_key_name}" "${conoha_userdata_base64_encoded_k8s_master001}" "${conoha_k8s_master001_name_tag}"
     )
     echo "${conoha_server_create_response}" | jq -cr . 1>>"${conoha_log}"
@@ -603,6 +606,8 @@ ConoHaK8sCreateClusterSingleMaster() {
   conoha_servers_list_detail_response=$(ConoHaServersListDetail)
   if [ "$(echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_worker001_name_tag}"'" ) | any(.)')" != true ]; then
     conoha_server_create_response=$(
+      # shellcheck disable=SC2030,SC2031
+      export CONOHA_SERVERS_CREATE_METADATA='"kubernetes_cluster_name":"'"${conoha_k8s_cluster_name}"'"'
       ConoHaServersCreate "${conoha_flavor_id}" "${conoha_image_id}" "${conoha_root_password}" "${conoha_key_name}" "${conoha_userdata_base64_encoded_k8s_worker001}" "${conoha_k8s_worker001_name_tag}"
     )
     echo "${conoha_server_create_response}" | jq -cr . 1>>"${conoha_log}"
@@ -622,6 +627,8 @@ ConoHaK8sCreateClusterSingleMaster() {
   conoha_servers_list_detail_response=$(ConoHaServersListDetail)
   if [ "$(echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .metadata.instance_name_tag == "'"${conoha_k8s_worker002_name_tag}"'" ) | any(.)')" != true ]; then
     conoha_server_create_response=$(
+      # shellcheck disable=SC2030,SC2031
+      export CONOHA_SERVERS_CREATE_METADATA='"kubernetes_cluster_name":"'"${conoha_k8s_cluster_name}"'"'
       ConoHaServersCreate "${conoha_flavor_id}" "${conoha_image_id}" "${conoha_root_password}" "${conoha_key_name}" "${conoha_userdata_base64_encoded_k8s_worker002}" "${conoha_k8s_worker002_name_tag}"
     )
     echo "${conoha_server_create_response}" | jq -cr . 1>>"${conoha_log}"
