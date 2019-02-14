@@ -576,7 +576,7 @@ ConoHaKubernetesCreateClusterSingleMaster() {
       exit 1
     fi
     PrintStderr "Create keypair \"${conoha_key_name}\""
-    ConoHaKeypairsUpload "${conoha_key_name}" "$(cat ~/.ssh/id_rsa.pub)"
+    ConoHaKeypairsUpload "${conoha_key_name}" "$(cat ~/.ssh/id_rsa.pub)" 1>>"${conoha_log}"
   else
     # すでに存在する鍵を利用
     PrintStderr "Keypair \"${conoha_key_name}\" already exists so using it."
