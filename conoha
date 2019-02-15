@@ -147,7 +147,7 @@ ConoHaFlavorsList() {
 
 ConoHaFlavorsListSumally() {
   conoha_api_response=$(ConoHaFlavorsList "$@")
-  echo "${conoha_api_response}" | jq '.flavors[] | { id, name }' | jq -s '{ flavors: . }'
+  echo "${conoha_api_response}" | jq '{ flavors: [(.flavors[]|{id,name})] }'
   #echo "${conoha_api_response}" | jq '.flavors[] | { "Key": .name, "Value": .id }' | jq -s 'sort_by( .Key ) | from_entries | { flavors: . }'
 }
 
@@ -170,7 +170,7 @@ ConoHaImagesList() {
 
 ConoHaImagesListSumally() {
   conoha_api_response=$(ConoHaImagesList "$@")
-  echo "${conoha_api_response}" | jq '.images[] | { id, name }' | jq -s '{ images: . }'
+  echo "${conoha_api_response}" | jq '{ images: [(.images[]|{id,name})] }'
   #echo "${conoha_api_response}" | jq '.images[] | { "Key": .name, "Value": .id }' | jq -s 'sort_by( .Key ) | from_entries | { images: . }'
 }
 
@@ -245,7 +245,7 @@ ConoHaNetworksListLocalNetworks() {
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
   )
-  echo "${conoha_api_response}" | jq -r '.networks[] | select( .name | startswith("local-") )' | jq -s '{ networks: . }'
+      echo "${conoha_api_response}" | jq -r '{ networks: [(.networks[]|select(.name|startswith("local-")))] }'
 }
 
 
@@ -267,7 +267,7 @@ ConoHaPortsList() {
 
 ConoHaPortsListSumally() {
   conoha_api_response=$(ConoHaPortsList "$@")
-  echo "${conoha_api_response}" | jq '.ports[] | { id, network_id, fixed_ips }' | jq -s '{ ports: . }'
+  echo "${conoha_api_response}" | jq '{ ports: [(.ports[]|{id,network_id,fixed_ips})] }'
 }
 
 ConoHaPortsCreate() {
@@ -317,7 +317,7 @@ ConoHaSecurityGroupsList() {
 
 ConoHaSecurityGroupsListSumally() {
   conoha_api_response=$(ConoHaSecurityGroupsList "$@")
-  echo "${conoha_api_response}" | jq '.security_groups[] | { tenant_id, description, id, name }' | jq -s '{ security_groups: . }'
+  echo "${conoha_api_response}" | jq '{ security_groups: [(.security_groups[]|{tenant_id,description,id,name})] }'
 }
 
 
@@ -398,7 +398,7 @@ ConoHaServersListDetail() {
 
 ConoHaServersListDetailSumally() {
   conoha_api_response=$(ConoHaServersListDetail "$@")
-  echo "${conoha_api_response}" | jq '.servers[] | { name_tag: .metadata.instance_name_tag, id, name, status, addresses: [(.addresses[] | .[] | .addr)] }' | jq -s '{ servers: . }'
+  echo "${conoha_api_response}" | jq '{ servers: [(.servers[]|{name_tag:.metadata.instance_name_tag,id,name,status,addresses:[(.addresses[]|.[]|.addr)]})] }'
 }
 
 ConoHaServersListAttachedPorts() {
@@ -487,12 +487,12 @@ ConoHaSubnetsList() {
 
 ConoHaSubnetsListLocalSubnets() {
   conoha_api_response=$(ConoHaSubnetsList "$@")
-  echo "${conoha_api_response}" | jq -r '.subnets[] | select( .name | startswith("local-") )' | jq -s '{ subnets: . }'
+  echo "${conoha_api_response}" | jq -r '{ subnets: [(.subnets[]|select(.name|startswith("local-")))] }'
 }
 
 ConoHaSubnetsListAdditionalIPAddresses() {
   conoha_api_response=$(ConoHaSubnetsList "$@")
-  echo "${conoha_api_response}" | jq '.subnets[] | select( .cidr | match("/32") )' | jq -s '{ subnets: . }'
+  echo "${conoha_api_response}" | jq '{ subnets: [(.subnets[]|select(.cidr|match("/32")))] }'
 }
 
 
