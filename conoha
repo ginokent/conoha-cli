@@ -520,8 +520,10 @@ ConoHaKubernetesCreateClusterSingleMaster() {
   #set -x  ## for DEBUG
   conoha_k8s_cluster_name="${1:?"$(printf '\n%s' "Set \$1 as Kubernetes cluster name")"}"
   conoha_log=~/.conoha.log ; touch "${conoha_log}" ; chmod go-rwx "${conoha_log}"
-  conoha_k8s_admin_config_file=~/.conoha.kubernetes.admin.conf ; touch "${conoha_k8s_admin_config_file}" ; chmod go-rwx "${conoha_k8s_admin_config_file}"
-  conoha_k8s_known_hosts=~/.conoha.known_hosts ; touch "${conoha_k8s_known_hosts}" ; chmod go-rwx "${conoha_k8s_known_hosts}"
+  conoha_k8s_kube_config_dir=~/.conoha/.kube ; mkdir -p "${conoha_k8s_kube_config_dir}"
+  conoha_k8s_kube_config_file="${conoha_k8s_kube_config_dir}/config" ; touch "${conoha_k8s_kube_config_file}"
+  conoha_k8s_known_hosts=~/.conoha/known_hosts ; touch "${conoha_k8s_known_hosts}"
+  chmod -R go-rwx "${conoha_k8s_kube_config_dir}"
   # TODO: k8sクラスタをInternalで構築したかった
   #local#conoha_subnet_name="local-10-5-8-0-24"
   #local#conoha_subnet_cidr="10.5.8.0/24"
@@ -657,7 +659,8 @@ ConoHaKubernetesCreateClusterSingleMaster() {
   # Kubernetes master001 node に sshできるようになるまで待つ
   ##
   PrintStderr "Checking to connect to server \"${conoha_k8s_master001_name_tag}\" ..."
-  SSH_OPTIONS="-o IdentityFile=${conoha_key_file} -o StrictHostKeyChecking=no -o UserKnownHostsFile=${conoha_k8s_known_hosts} -o User=${SSH_USER:="root"}"
+  conoha_ssh_user="${SSH_USER:-"root"}"
+  SSH_OPTIONS="-o IdentityFile=${conoha_key_file} -o StrictHostKeyChecking=no -o UserKnownHostsFile=${conoha_k8s_known_hosts}"
   # shellcheck disable=SC2086
   sshCmd() { ssh -n ${SSH_OPTIONS} "$@"; }
   conoha_ssh_host_k8s_master001=
@@ -675,7 +678,7 @@ ConoHaKubernetesCreateClusterSingleMaster() {
   PrintStderr "Getting kubeadm join command on \"${conoha_k8s_master001_name_tag}\" ..."
   conoha_k8s_worker_join_command=
   while true; do
-    conoha_k8s_worker_join_command=$(sshCmd "${conoha_ssh_host_k8s_master001}" "grep -o 'kubeadm join .*$' /root/.userdata/output.log 2>/dev/null" || true)
+    conoha_k8s_worker_join_command=$(sshCmd "${conoha_ssh_user}"@"${conoha_ssh_host_k8s_master001}" "grep -o 'kubeadm join .*$' /root/.userdata/output.log 2>/dev/null" || true)
     [ -z "${conoha_k8s_worker_join_command}" ] || break
     sleep 10
     PrintStderr "Waiting kubeadm init on \"${conoha_k8s_master001_name_tag}\" ..."
@@ -683,16 +686,16 @@ ConoHaKubernetesCreateClusterSingleMaster() {
   ##
   # Kubernetes master001 node から /etc/kubernetes/admin.conf をダウンロード
   ##
-  PrintStderr "Downloading \"/etc/kubernetes/admin.conf\" on \"${conoha_k8s_master001_name_tag}\" as \"${conoha_k8s_admin_config_file}\" ..."
+  PrintStderr "Downloading \"/etc/kubernetes/admin.conf\" on \"${conoha_k8s_master001_name_tag}\" as \"${conoha_k8s_kube_config_file}\" ..."
   conoha_k8s_admin_config_content=
   while true; do
-    conoha_k8s_admin_config_content=$(sshCmd "${conoha_ssh_host_k8s_master001}" "cat /etc/kubernetes/admin.conf" || true)
+    conoha_k8s_admin_config_content=$(sshCmd "${conoha_ssh_user}"@"${conoha_ssh_host_k8s_master001}" "cat /etc/kubernetes/admin.conf" || true)
     [ -z "${conoha_k8s_admin_config_content}" ] || break
     sleep 10
     PrintStderr "Waiting to generate \"/etc/kubernetes/admin.conf\" on \"${conoha_k8s_master001_name_tag}\" ..."
   done
-  echo "${conoha_k8s_admin_config_content}" >"${conoha_k8s_admin_config_file}"
-  sshCmd "${conoha_ssh_host_k8s_master001}" """
+  echo "${conoha_k8s_admin_config_content}" >"${conoha_k8s_kube_config_file}"
+  sshCmd "${conoha_ssh_user}"@"${conoha_ssh_host_k8s_master001}" """
     grep -q \"kubeadm completion bash\" ~/.bashrc || echo \"eval \\\"\\\$(kubeadm completion bash)\\\"\" 1>>~/.bashrc
     grep -q \"kubectl completion bash\" ~/.bashrc || echo \"eval \\\"\\\$(kubectl completion bash)\\\"\" 1>>~/.bashrc
   """
@@ -717,9 +720,9 @@ ConoHaKubernetesCreateClusterSingleMaster() {
   ##
   # Kubernetes worker001 node に ~/.kube/config をアップロード
   ##
-  PrintStderr "Uploading \"${conoha_k8s_admin_config_file}\" as \"~/.kube/config\" to worker node \"${conoha_k8s_worker001_name_tag}\" ..."
-  sshCmd "${conoha_ssh_host_k8s_worker001}" "[ -f ~/.kube/config ] || { mkdir -p ~/.kube; echo '${conoha_k8s_admin_config_content}' >~/.kube/config; }"
-  sshCmd "${conoha_ssh_host_k8s_worker001}" """
+  PrintStderr "Uploading \"${conoha_k8s_kube_config_file}\" as \"~/.kube/config\" to worker node \"${conoha_k8s_worker001_name_tag}\" ..."
+  sshCmd "${conoha_ssh_user}"@"${conoha_ssh_host_k8s_worker001}" "[ -f ~/.kube/config ] || { mkdir -p ~/.kube; echo '${conoha_k8s_admin_config_content}' >~/.kube/config; }"
+  sshCmd "${conoha_ssh_user}"@"${conoha_ssh_host_k8s_worker001}" """
     grep -q \"kubeadm completion bash\" ~/.bashrc || echo \"eval \\\"\\\$(kubeadm completion bash)\\\"\" 1>>~/.bashrc
     grep -q \"kubectl completion bash\" ~/.bashrc || echo \"eval \\\"\\\$(kubectl completion bash)\\\"\" 1>>~/.bashrc
   """
@@ -727,7 +730,7 @@ ConoHaKubernetesCreateClusterSingleMaster() {
   # Kubernetes worker001 node で kubeadm join コマンドを実行
   ##
   PrintStderr "Join the cluster if worker node \"${conoha_k8s_worker001_name_tag}\" does not participate in kubernetes cluster"
-  sshCmd "${conoha_ssh_host_k8s_worker001}" "kubectl get nodes | grep -q \"^\$(hostname --short | cut -b1-16)\" || ${conoha_k8s_worker_join_command}"
+  sshCmd "${conoha_ssh_user}"@"${conoha_ssh_host_k8s_worker001}" "kubectl get nodes | grep -q \"^\$(hostname --short | cut -b1-16)\" || ${conoha_k8s_worker_join_command}"
   ####
   #
   # Kubernetes worker002
@@ -749,9 +752,9 @@ ConoHaKubernetesCreateClusterSingleMaster() {
   ##
   # Kubernetes worker002 node に ~/.kube/config をアップロード
   ##
-  PrintStderr "Uploading \"${conoha_k8s_admin_config_file}\" as \"~/.kube/config\" to worker node \"${conoha_k8s_worker002_name_tag}\" ..."
-  sshCmd "${conoha_ssh_host_k8s_worker002}" "[ -f ~/.kube/config ] || { mkdir -p ~/.kube; echo '${conoha_k8s_admin_config_content}' >~/.kube/config; }"
-  sshCmd "${conoha_ssh_host_k8s_worker002}" """
+  PrintStderr "Uploading \"${conoha_k8s_kube_config_file}\" as \"~/.kube/config\" to worker node \"${conoha_k8s_worker002_name_tag}\" ..."
+  sshCmd "${conoha_ssh_user}"@"${conoha_ssh_host_k8s_worker002}" "[ -f ~/.kube/config ] || { mkdir -p ~/.kube; echo '${conoha_k8s_admin_config_content}' >~/.kube/config; }"
+  sshCmd "${conoha_ssh_user}"@"${conoha_ssh_host_k8s_worker002}" """
     grep -q \"kubeadm completion bash\" ~/.bashrc || echo \"eval \\\"\\\$(kubeadm completion bash)\\\"\" 1>>~/.bashrc
     grep -q \"kubectl completion bash\" ~/.bashrc || echo \"eval \\\"\\\$(kubectl completion bash)\\\"\" 1>>~/.bashrc
   """
@@ -759,20 +762,25 @@ ConoHaKubernetesCreateClusterSingleMaster() {
   # Kubernetes worker002 node で kubeadm join コマンドを実行
   ##
   PrintStderr "Join the cluster if worker node \"${conoha_k8s_worker002_name_tag}\" does not participate in kubernetes cluster"
-  sshCmd "${conoha_ssh_host_k8s_worker002}" "kubectl get nodes | grep -q \"^\$(hostname --short | cut -b1-16)\" || ${conoha_k8s_worker_join_command}"
-  ##
-  # Kubernetes master kubectl get nodes の結果を出力
-  ##
-  sshCmd "${conoha_ssh_host_k8s_master001}" "kubectl get nodes"
+  sshCmd "${conoha_ssh_user}"@"${conoha_ssh_host_k8s_worker002}" "kubectl get nodes | grep -q \"^\$(hostname --short | cut -b1-16)\" || ${conoha_k8s_worker_join_command}"
   ##
   # for access
   ##
   PrintStderr "If connecting to master node \"${conoha_k8s_master001_name_tag}\", do the following:"
-  PrintStderr "  $ ssh ${SSH_OPTIONS} ${conoha_ssh_host_k8s_master001}  ## ${conoha_k8s_master001_name_tag}"
+  PrintStderr "  $ ssh ${SSH_OPTIONS} ${conoha_ssh_user}@${conoha_ssh_host_k8s_master001}  ## ${conoha_k8s_master001_name_tag}"
   PrintStderr "If connecting to worker node \"${conoha_k8s_worker001_name_tag}\", do the following:"
-  PrintStderr "  $ ssh ${SSH_OPTIONS} ${conoha_ssh_host_k8s_worker001}  ## ${conoha_k8s_worker001_name_tag}"
+  PrintStderr "  $ ssh ${SSH_OPTIONS} ${conoha_ssh_user}@${conoha_ssh_host_k8s_worker001}  ## ${conoha_k8s_worker001_name_tag}"
   PrintStderr "If connecting to worker node \"${conoha_k8s_worker002_name_tag}\", do the following:"
-  PrintStderr "  $ ssh ${SSH_OPTIONS} ${conoha_ssh_host_k8s_worker002}  ## ${conoha_k8s_worker002_name_tag}"
+  PrintStderr "  $ ssh ${SSH_OPTIONS} ${conoha_ssh_user}@${conoha_ssh_host_k8s_worker002}  ## ${conoha_k8s_worker002_name_tag}"
+  ##
+  # kubectl get の結果を出力
+  ##
+  PrintStderr "$ export KUBECONFIG=${conoha_k8s_kube_config_file}"
+  export KUBECONFIG="${conoha_k8s_kube_config_file}"
+  PrintStderr "$ kubectl get nodes"
+  kubectl get nodes
+  PrintStderr "$ kubectl get pods --namespace=kube-system"
+  kubectl get pods --namespace=kube-system
 }
 
 ConoHaKubernetesListClusterNodes() {
