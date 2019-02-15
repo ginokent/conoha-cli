@@ -789,7 +789,7 @@ ConoHaKubernetesTerminateCluster() {
   if [ -n "${conoha_servers_name_tags}" ]; then
     PrintStderr "Terminate servers:"
     echo "${conoha_servers_name_tags}" | while read -r LINE; do
-      PrintStderr "  * ${LINE}"
+      PrintStderr "  - ${LINE}"
     done
     PrintStderr "If you want to cancel, please press Ctrl+C within 10 seconds ..."
     sleep 10
@@ -821,20 +821,20 @@ ConohaMain() {  ## main start DO NOT REMOVE ##
 
   # shellcheck disable=1004,SC2016
   get_sub_cmds='''
-    echo "${conoha_main_method_content}" \
+    printf "%s" "${conoha_main_method_content}" \
       | grep -Eo "^ {4}[^ ]+ *)" \
       | grep -Ev "^ {4}(subcmds|\*|completion)" \
       | tr -d "\n" \
-      | sed "s/ *//g; s/)/ /g; s/|/ /g"
+      | sed "s/ *//g; s/)/ /g; s/ *$//g"
   '''
 
   # shellcheck disable=1004,SC2016
   get_sub2_cmds='''
-    echo "${conoha_main_method_content}" \
+    printf "%s" "${conoha_main_method_content}" \
       | grep -Eo "^( {4}| {8})[^ ]+ *)" \
       | grep -Ev "^ {4}(subcmds|\*)|^ {8}subcmds" \
       | tr -d "\n" \
-      | sed "s/.* \(${sub_command} *)[^\*]*\).*/\1/g; s/^${sub_command} *)//g; s/ *//g; s/)/ /g; s/|/ /g"
+      | sed "s/.* \(${sub_command} *)[^\*]*\).*/\1/g; s/^${sub_command} *)//g; s/ *//g; s/)/ /g; s/ *$//g"
   '''
 
   case "${sub_command}" in
@@ -857,14 +857,14 @@ ConohaMain() {  ## main start DO NOT REMOVE ##
         subcmds     ) eval "${get_sub2_cmds}" ;;
         list        ) ConoHaFlavorsList "$@" ;;
         list-sumally) ConoHaFlavorsListSumally "$@" ;;
-        *           ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
+        *           ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds | sed 's/^/ /; s/ /\\n  - /g')"; return 1 ;;
       esac ;;
     images)
       case "${sub2_command}" in
         subcmds     ) eval "${get_sub2_cmds}" ;;
         list        ) ConoHaImagesList "$@" ;;
         list-sumally) ConoHaImagesListSumally "$@" ;;
-        *           ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
+        *           ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds | sed 's/^/ /; s/ /\\n  - /g')"; return 1 ;;
       esac ;;
     kubernetes)
       case "${sub2_command}" in
@@ -872,14 +872,14 @@ ConohaMain() {  ## main start DO NOT REMOVE ##
         create-cluster-single-master) ConoHaKubernetesCreateClusterSingleMaster "$@" ;;
         list-cluster-nodes          ) ConoHaKubernetesListClusterNodes "$@" ;;
         terminate-cluster           ) ConoHaKubernetesTerminateCluster "$@" ;;
-        *                           ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
+        *                           ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds | sed 's/^/ /; s/ /\\n  - /g')"; return 1 ;;
       esac ;;
     keypairs)
       case "${sub2_command}" in
         subcmds) eval "${get_sub2_cmds}" ;;
         list   ) ConoHaKeypairsList "$@" ;;
         upload ) ConoHaKeypairsUpload "$@" ;;
-        *      ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
+        *      ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds | sed 's/^/ /; s/ /\\n  - /g')"; return 1 ;;
       esac ;;
     networks)
       case "${sub2_command}" in
@@ -887,7 +887,7 @@ ConohaMain() {  ## main start DO NOT REMOVE ##
         create-local-network) ConoHaNetworksCreateLocalNetwork "$@" ;;
         delete              ) ConoHaNetworksDelete "$@" ;;
         list-local-networks ) ConoHaNetworksListLocalNetworks "$@" ;;
-        *                   ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
+        *                   ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds | sed 's/^/ /; s/ /\\n  - /g')"; return 1 ;;
       esac ;;
     ports)
       case "${sub2_command}" in
@@ -896,14 +896,14 @@ ConohaMain() {  ## main start DO NOT REMOVE ##
         delete      ) ConoHaPortsDelete "$@" ;;
         list        ) ConoHaPortsList "$@" ;;
         list-sumally) ConoHaPortsListSumally "$@" ;;
-        *           ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
+        *           ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds | sed 's/^/ /; s/ /\\n  - /g')"; return 1 ;;
       esac ;;
     securitygroups)
       case "${sub2_command}" in
         subcmds     ) eval "${get_sub2_cmds}" ;;
         list        ) ConoHaSecurityGroupsList "$@" ;;
         list-sumally) ConoHaSecurityGroupsListSumally "$@" ;;
-        *           ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
+        *           ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds | sed 's/^/ /; s/ /\\n  - /g')"; return 1 ;;
       esac ;;
     servers)
       case "${sub2_command}" in
@@ -917,7 +917,7 @@ ConohaMain() {  ## main start DO NOT REMOVE ##
         list-detail-sumally) ConoHaServersListDetailSumally "$@" ;;
         start              ) ConoHaServersStart "$@" ;;
         stop               ) ConoHaServersStop "$@" ;;
-        *                  ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
+        *                  ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds | sed 's/^/ /; s/ /\\n  - /g')"; return 1 ;;
       esac ;;
     subnets)
       case "${sub2_command}" in
@@ -927,7 +927,7 @@ ConohaMain() {  ## main start DO NOT REMOVE ##
         list                       ) ConoHaSubnetsList "$@" ;;
         list-additional-ipaddresses) ConoHaSubnetsListAdditionalIPAddresses "$@" ;;
         list-local-subnets         ) ConoHaSubnetsListLocalSubnets "$@" ;;
-        *                          ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
+        *                          ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds | sed 's/^/ /; s/ /\\n  - /g')"; return 1 ;;
       esac ;;
     tools)
       case "${sub2_command}" in
@@ -935,7 +935,7 @@ ConohaMain() {  ## main start DO NOT REMOVE ##
         get-image-ubuntu1804) ConoHaToolsGetImageUbuntu1804 "$@" ;;
         get-flavor-512mb    ) ConoHaToolsGetFlavor512MB "$@" ;;
         get-flavor-1gb      ) ConoHaToolsGetFlavor1GB "$@" ;;
-        *                   ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds)"; return 1 ;;
+        *                   ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds | sed 's/^/ /; s/ /\\n  - /g')"; return 1 ;;
       esac ;;
     version)
       case "${sub2_command}" in
@@ -943,7 +943,7 @@ ConohaMain() {  ## main start DO NOT REMOVE ##
         *      ) echo "${CONOHA_PROGRAM_NAME} ${CONOHA_VERSION}" ;;
       esac ;;
     *)
-      PrintStderr "allowed value: $(bash "$0" subcmds)"; return 1 ;;
+      PrintStderr "allowed value: $(bash "$0" subcmds | sed 's/^/ /; s/ /\\n  - /g')"; return 1 ;;
   esac
 } && ConohaMain "$@"  ## main end DO NOT REMOVE ##
 
