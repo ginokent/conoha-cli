@@ -101,15 +101,15 @@ ConoHaSetCredentials() {
 }
 
 ConoHaBase64Encode() {
-CheckDependency base64 openssl
-if command -v base64 1>/dev/null; then
-  base64 </dev/stdin
-elif command -v openssl 1>/dev/null; then
-  openssl base64 </dev/stdin
-else
-  echo "You need \"base64\" or \"openssl\""
-  exit 1
-fi
+  CheckDependency base64 openssl
+  if command -v base64 1>/dev/null; then
+    base64 </dev/stdin
+  elif command -v openssl 1>/dev/null; then
+    openssl base64 </dev/stdin
+  else
+    echo "You need \"base64\" or \"openssl\""
+    exit 1
+  fi
 }
 
 ConoHaJSON() {
@@ -516,6 +516,7 @@ ConoHaToolsGetFlavor1GB() {
 }
 
 ConoHaKubernetesCreateClusterSingleMaster() {
+  CheckDependency ssh
   #set -x  ## for DEBUG
   conoha_k8s_cluster_name="${1:?"$(printf '\n%s' "Set \$1 as Kubernetes cluster name")"}"
   conoha_log=~/.conoha.log ; touch "${conoha_log}" ; chmod go-rwx "${conoha_log}"
