@@ -783,11 +783,23 @@ ConoHaKubernetesCreateClusterSingleMaster() {
   kubectl get pods --namespace=kube-system
 }
 
+ConoHaKubernetesListClustersJSON() {
+  ConoHaServersListDetail | jq -r '{ clusters: ([.servers[].metadata.kubernetes_cluster_name|select(.!=null)]|unique) }'
+}
+
+ConoHaKubernetesListClusters() {
+  ConoHaKubernetesListClustersJSON | jq -r '.clusters[] | [(.)] | @tsv'
+}
+
 ConoHaKubernetesListClusterNodes() {
+  ConoHaKubernetesListClusterNodesJSON "$@" | jq -r '.servers[] | [(.addresses|.[]|.[]|select(.version==4)|.addr), (.metadata|.instance_name_tag, .kubernetes_cluster_role)] | @tsv'
+}
+
+ConoHaKubernetesListClusterNodesJSON() {
   conoha_k8s_cluster_name="${1:?"$(printf '\n%s' "Set \$1 as Kubernetes cluster name")"}"
   conoha_servers_list_detail=$(ConoHaServersListDetail | jq -r '{ servers: [(.servers[] | select(.metadata.kubernetes_cluster_name == "'"${conoha_k8s_cluster_name}"'"))]}')
   if [ -n "${conoha_servers_list_detail}" ]; then
-    echo "${conoha_servers_list_detail}" | jq -r  # '.servers[] | [(.addresses|.[]|.[]|select(.version==4)|.addr), (.metadata|.instance_name_tag, .kubernetes_cluster_role)] | @tsv'
+    echo "${conoha_servers_list_detail}" | jq -r
   fi
 }
 
@@ -879,7 +891,10 @@ ConohaMain() {  ## main start DO NOT REMOVE ##
       case "${sub2_command}" in
         subcmds                     ) eval "${get_sub2_cmds}" ;;
         create-cluster-single-master) ConoHaKubernetesCreateClusterSingleMaster "$@" ;;
+        list-clusters               ) ConoHaKubernetesListClusters "$@" ;;
+        list-clusters-json          ) ConoHaKubernetesListClustersJSON "$@" ;;
         list-cluster-nodes          ) ConoHaKubernetesListClusterNodes "$@" ;;
+        list-cluster-nodes-json     ) ConoHaKubernetesListClusterNodesJSON "$@" ;;
         terminate-cluster           ) ConoHaKubernetesTerminateCluster "$@" ;;
         *                           ) PrintStderr "allowed value: $(bash "$0" "${sub_command}" subcmds | sed 's/^/ /; s/ /\\n  - /g')"; return 1 ;;
       esac ;;
