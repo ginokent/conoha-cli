@@ -675,7 +675,7 @@ ConoHaKubernetesCreateClusterSingleMaster() {
   ##
   PrintStderr "Checking to connect to server \"${conoha_k8s_master001_name_tag}\" ..."
   conoha_ssh_user="${SSH_USER:-"root"}"
-  SSH_OPTIONS="-o PasswordAuthentication -o IdentityFile=${conoha_key_file} -o StrictHostKeyChecking=no -o UserKnownHostsFile=${conoha_k8s_known_hosts}"
+  SSH_OPTIONS="-o PasswordAuthentication=no -o IdentityFile=${conoha_key_file} -o StrictHostKeyChecking=no -o UserKnownHostsFile=${conoha_k8s_known_hosts}"
   # shellcheck disable=SC2086
   sshCmd() { ssh -n ${SSH_OPTIONS} "$@"; }
   conoha_ssh_host_k8s_master001=
