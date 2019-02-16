@@ -363,19 +363,27 @@ ConoHaServersDelete() {
   # ref. https://www.conoha.jp/docs/compute-delete_vm.html
   conoha_server_id="${1:?"$(printf '\n%s\n%s\n%s' "Set \$1 as Server ID (e.g. \"ffffffff-ffff-ffff-ffff-ffffffffffff\")" "See:" "  $ conoha servers list")"}"
   ConoHaSetCredentials
-  conoha_servers_list_detail_response=$(ConoHaServersListDetail)
-  PrintStderr "Terminate servers:"
-  echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .id == '"${conoha_server_id}"' ) | .metadata.instance_name_tag' | while read -r LINE; do
-    PrintStderr "  - ${LINE}"
-  done
-  PrintStderr "If you want to cancel, please press Ctrl+C within 10 seconds ..."
-  sleep 10
   conoha_api_response=$(
     conoha_api_endpoint="https://compute.tyo1.conoha.io/v2/${CONOHA_TENANT_ID}/servers/${conoha_server_id}"
     curl -fsS -X DELETE "${conoha_api_endpoint}" \
       -H 'Accept: application/json' \
       -H "X-Auth-Token: ${CONOHA_TOKEN}" \
   )
+  echo "${conoha_api_response}" | jq .
+}
+
+ConoHaServersDeleteWithConfirm() {
+  # ref. https://www.conoha.jp/docs/compute-delete_vm.html
+  conoha_server_id="${1:?"$(printf '\n%s\n%s\n%s' "Set \$1 as Server ID (e.g. \"ffffffff-ffff-ffff-ffff-ffffffffffff\")" "See:" "  $ conoha servers list")"}"
+  ConoHaSetCredentials
+  conoha_servers_deleting=$(ConoHaServersListDetail | jq -r '{ servers: [(.servers[]|select(.id =="'"${conoha_server_id}"'"))] }')
+  PrintStderr "Terminate servers:"
+  echo "${conoha_servers_deleting}" | jq -r '.servers[]|.metadata.instance_name_tag+" ("+.id+", "+(.addresses[]|.[]|select(.version==4)|.addr)+")"' | while read -r LINE; do
+    PrintStderr "  - ${LINE}"
+  done
+  PrintStderr "If you want to cancel, please press Ctrl+C within 10 seconds ..."
+  sleep 10
+  ConoHaServersDelete "${conoha_server_id}"
   echo "${conoha_api_response}" | jq .
 }
 
@@ -667,7 +675,7 @@ ConoHaKubernetesCreateClusterSingleMaster() {
   ##
   PrintStderr "Checking to connect to server \"${conoha_k8s_master001_name_tag}\" ..."
   conoha_ssh_user="${SSH_USER:-"root"}"
-  SSH_OPTIONS="-o IdentityFile=${conoha_key_file} -o StrictHostKeyChecking=no -o UserKnownHostsFile=${conoha_k8s_known_hosts}"
+  SSH_OPTIONS="-o PasswordAuthentication -o IdentityFile=${conoha_key_file} -o StrictHostKeyChecking=no -o UserKnownHostsFile=${conoha_k8s_known_hosts}"
   # shellcheck disable=SC2086
   sshCmd() { ssh -n ${SSH_OPTIONS} "$@"; }
   conoha_ssh_host_k8s_master001=
@@ -812,11 +820,11 @@ ConoHaKubernetesListClusterNodesJSON() {
 
 ConoHaKubernetesTerminateCluster() {
   conoha_k8s_cluster_name="${1:?"$(printf '\n%s' "Set \$1 as Kubernetes cluster name")"}"
-  conoha_servers_k8s_cluster_nodes=$(ConoHaServersListDetail | jq -r '.servers[] | select( .metadata.kubernetes_cluster_name == "'"${conoha_k8s_cluster_name}"'" )' | jq -sr '{ servers: . }')
+  conoha_servers_k8s_cluster_nodes=$(ConoHaServersListDetail | jq -r '{ servers: [(.servers[]|select(.metadata.kubernetes_cluster_name=="'"${conoha_k8s_cluster_name}"'"))] }')
   conoha_servers_name_tags=$(echo "${conoha_servers_k8s_cluster_nodes}" | jq -r '.servers[] | .metadata.instance_name_tag')
   if [ -n "${conoha_servers_name_tags}" ]; then
     PrintStderr "Terminate servers:"
-    echo "${conoha_servers_name_tags}" | while read -r LINE; do
+    echo "${conoha_servers_k8s_cluster_nodes}" | jq -r '.servers[]|.metadata.instance_name_tag+" ("+.id+", "+(.addresses[]|.[]|select(.version==4)|.addr)+")"' | while read -r LINE; do
       PrintStderr "  - ${LINE}"
     done
     PrintStderr "If you want to cancel, please press Ctrl+C within 10 seconds ..."
@@ -941,7 +949,7 @@ ConohaMain() {  ## main start DO NOT REMOVE ##
         subcmds            ) eval "${get_sub2_cmds}" ;;
         attach-port        ) ConoHaServersAttachPort "$@" ;;
         create             ) ConoHaServersCreate "$@" ;;
-        delete             ) ConoHaServersDelete "$@" ;;
+        delete             ) ConoHaServersDeleteWithConfirm "$@" ;;
         list-attached-ports) ConoHaServersListAttachedPorts "$@" ;;
         list               ) ConoHaServersList "$@" ;;
         list-detail        ) ConoHaServersListDetail "$@" ;;
