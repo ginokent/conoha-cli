@@ -342,10 +342,10 @@ ConoHaServersAttachPort() {
 ConoHaServersCreate() {
   # ref. https://www.conoha.jp/docs/compute-create_vm.html
   conoha_flavor_id="${1:?"$(printf '\n%s\n%s\n%s' "Set \$1 as VM Flavor ID (e.g. \"d92b02ce-9a4f-4544-8d7f-ae8380bc08e7\")" "See:" "  $ conoha flavors list")"}"
-  conoha_image_id="${2:?"$(printf '\n%s\n%s\n%s' "Set \$2 as VM Image ID (e.g. \"2322444e-9000-47a8-a425-45fdef52d031\")" "See:" "  $ conoha images list")"}"
-  conoha_root_password="${3:?"$(printf '\n%s' "Set \$3 as VM OS Password (e.g. \"P@ssw0rd\")")"}"
+  conoha_image_id="${2:?"$(printf '\n%s\n%s\n%s' "Set \$2 as VM Image ID (e.g. \"1ae808e4-f4ee-4ee6-adfc-0ba8c2bf67f3\")" "See:" "  $ conoha images list")"}"
+  conoha_root_password="${3:?"$(printf '\n%s' "Set \$3 as VM OS Password (e.g. \"C0n0H@P@ssw0rd\")")"}"
   conoha_key_name="${4:?"$(printf '\n%s\n%s\n%s' "Set \$4 as VM OS Keypair Name (e.g. \"foobar\")" "See:" "  $ conoha keypairs list")"}"
-  conoha_userdata_base64_encoded="${5:?"$(printf '\n%s\n%s\n%s' "Set \$5 as base64-encoded userdata (e.g. \"IyEvYmluL2Jhc2gK...\")" "If you want to encode base64, run:" "  $ cat \"\${YOUR_USER_DATA_FILE:?}\" | openssl base64")"}"
+  conoha_userdata_base64_encoded="${5:?"$(printf '\n%s\n%s\n%s' "Set \$5 as base64-encoded userdata (e.g. \"IyEvYmluL3NoCmRhdGUK\")" "If you want to encode base64, run:" "  $ cat \"\${YOUR_USER_DATA_FILE:?}\" | openssl base64")"}"
   conoha_name_tag="${6:?"$(printf '\n%s' "Set \$6 as VM Name Tag (e.g. \"bastion\")")"}"
   # CONOHA_SERVERS_CREATE_METADATA は環境変数経由で渡す用
   ConoHaSetCredentials
@@ -363,6 +363,13 @@ ConoHaServersDelete() {
   # ref. https://www.conoha.jp/docs/compute-delete_vm.html
   conoha_server_id="${1:?"$(printf '\n%s\n%s\n%s' "Set \$1 as Server ID (e.g. \"ffffffff-ffff-ffff-ffff-ffffffffffff\")" "See:" "  $ conoha servers list")"}"
   ConoHaSetCredentials
+  conoha_servers_list_detail_response=$(ConoHaServersListDetail)
+  PrintStderr "Terminate servers:"
+  echo "${conoha_servers_list_detail_response}" | jq -r '.servers[] | select( .id == '"${conoha_server_id}"' ) | .metadata.instance_name_tag' | while read -r LINE; do
+    PrintStderr "  - ${LINE}"
+  done
+  PrintStderr "If you want to cancel, please press Ctrl+C within 10 seconds ..."
+  sleep 10
   conoha_api_response=$(
     conoha_api_endpoint="https://compute.tyo1.conoha.io/v2/${CONOHA_TENANT_ID}/servers/${conoha_server_id}"
     curl -fsS -X DELETE "${conoha_api_endpoint}" \
