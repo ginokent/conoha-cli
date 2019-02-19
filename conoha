@@ -693,7 +693,7 @@ ConoHaKubernetesCreateClusterSingleMaster() {
   PrintStderr "Getting kubeadm join command on \"${conoha_k8s_master001_name_tag}\" ..."
   conoha_k8s_worker_join_command=
   while true; do
-    conoha_k8s_worker_join_command=$(sshCmd "${conoha_ssh_user}"@"${conoha_ssh_host_k8s_master001}" "grep -o 'kubeadm join .*$' /root/.user-data/output.log 2>/dev/null" || true)
+    conoha_k8s_worker_join_command=$(sshCmd "${conoha_ssh_user}"@"${conoha_ssh_host_k8s_master001}" "grep -o 'kubeadm join .*$' /root/.user-data/output.log 2>/dev/null | tail -n 1 | tee ~/.kube/join" || true)
     [ -z "${conoha_k8s_worker_join_command}" ] || break
     sleep 10
     PrintStderr "Waiting kubeadm init on \"${conoha_k8s_master001_name_tag}\" ..."
